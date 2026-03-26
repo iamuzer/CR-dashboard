@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Crypto Dashboard V12</title>
+<title>Crypto Dashboard V14</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 :root{
@@ -12,7 +12,7 @@
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
-.wrap{max-width:1280px;margin:0 auto;padding:20px}
+.wrap{max-width:1360px;margin:0 auto;padding:20px}
 .header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px}
 .logo{font-weight:700;letter-spacing:.12em;color:var(--safe)}
 .sync{font-size:12px;color:var(--neutral)}
@@ -62,6 +62,11 @@ canvas{width:100%!important;height:100%!important}
 .progress{height:8px;background:#111a27;border-radius:999px;overflow:hidden;border:1px solid rgba(74,96,128,.25)}
 .progress > div{height:100%;border-radius:999px}
 .explain{font-size:14px;line-height:1.7}
+.callout{padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.15)}
+.callout-title{font-size:12px;color:var(--neutral);text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px}
+.state-box{padding:14px;border-radius:14px;border:1px solid var(--border);background:rgba(0,0,0,.14)}
+.state-title{font-size:12px;color:var(--neutral);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
+.state-big{font-size:24px;font-weight:700;color:var(--white);margin-bottom:6px}
 footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-align:center}
 @media (max-width:1000px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr}.header{flex-direction:column;align-items:flex-start}}
 </style>
@@ -70,7 +75,7 @@ footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-
 <div class="wrap">
   <div class="header">
     <div>
-      <div class="logo">CRYPTO DASHBOARD <span class="muted">V12</span></div>
+      <div class="logo">CRYPTO DASHBOARD <span class="muted">V14</span></div>
       <div class="sync" id="syncText">Se încarcă...</div>
     </div>
     <div class="badge warn" id="marketState">ANALIZĂ ÎN CURS</div>
@@ -94,10 +99,7 @@ footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-
     <div class="grid-2">
       <div class="card">
         <div class="asset-head">
-          <div class="asset-title">
-            <div class="coin btc">₿</div>
-            <div><div style="font-weight:700">BTC</div><div class="muted" style="font-size:12px">Summary</div></div>
-          </div>
+          <div class="asset-title"><div class="coin btc">₿</div><div><div style="font-weight:700">BTC</div><div class="muted" style="font-size:12px">Summary</div></div></div>
           <div class="badge" id="btcSummaryBadge">--</div>
         </div>
         <div class="price" id="btcPrice">--</div>
@@ -109,10 +111,7 @@ footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-
 
       <div class="card">
         <div class="asset-head">
-          <div class="asset-title">
-            <div class="coin eth">Ξ</div>
-            <div><div style="font-weight:700">ETH</div><div class="muted" style="font-size:12px">Summary</div></div>
-          </div>
+          <div class="asset-title"><div class="coin eth">Ξ</div><div><div style="font-weight:700">ETH</div><div class="muted" style="font-size:12px">Summary</div></div></div>
           <div class="badge" id="ethSummaryBadge">--</div>
         </div>
         <div class="price" id="ethPrice">--</div>
@@ -137,10 +136,7 @@ footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-
 
     <div class="card" style="margin-bottom:14px">
       <div class="asset-head">
-        <div class="asset-title">
-          <div class="coin" id="detailCoin">₿</div>
-          <div><div style="font-weight:700" id="detailTitle">BTC</div><div class="muted" style="font-size:12px">Analiză completă</div></div>
-        </div>
+        <div class="asset-title"><div class="coin" id="detailCoin">₿</div><div><div style="font-weight:700" id="detailTitle">BTC</div><div class="muted" style="font-size:12px">Analiză completă</div></div></div>
         <div class="badge" id="detailBadge">--</div>
       </div>
       <div class="grid-4">
@@ -167,17 +163,11 @@ footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-
         <div class="kpi"><div class="label">ETH/BTC ratio</div><div class="value" id="macroEthBtc">--</div></div>
       </div>
       <div class="grid-2">
-        <div>
-          <div class="section-title">Price chart</div>
-          <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
-        </div>
-        <div>
-          <div class="section-title">MVRV chart</div>
-          <div class="chart-wrap"><canvas id="mvrvChart"></canvas></div>
-        </div>
+        <div><div class="section-title">Price chart</div><div class="chart-wrap"><canvas id="priceChart"></canvas></div></div>
+        <div><div class="section-title">MVRV chart</div><div class="chart-wrap"><canvas id="mvrvChart"></canvas></div></div>
       </div>
       <div style="margin-top:14px;font-size:14px;line-height:1.7" id="macroComment"></div>
-      <div class="small-note">Macro = contextul mare. Aici nu căutăm intrări fine, ci dacă piața e devreme, târziu în ciclu sau în tranziție spre bear.</div>
+      <div class="small-note">Macro = contextul mare. Aici urmărești dacă piața intră în distribuție, încălzire excesivă sau, dimpotrivă, începe să iasă dintr-o zonă de stres.</div>
     </div>
 
     <div id="microTab" class="card hidden">
@@ -189,36 +179,49 @@ footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-
         <div class="kpi"><div class="label">Pattern state</div><div class="value" id="microPattern">--</div></div>
       </div>
       <div class="grid-2">
-        <div>
-          <div class="section-title">RSI chart (30 / 50 / 70)</div>
-          <div class="chart-wrap"><canvas id="rsiChart"></canvas></div>
-        </div>
-        <div>
-          <div class="section-title">Funding chart</div>
-          <div class="chart-wrap"><canvas id="fundingChart"></canvas></div>
-        </div>
+        <div><div class="section-title">RSI chart (30 / 50 / 70)</div><div class="chart-wrap"><canvas id="rsiChart"></canvas></div></div>
+        <div><div class="section-title">Funding chart</div><div class="chart-wrap"><canvas id="fundingChart"></canvas></div></div>
       </div>
       <div style="margin-top:14px;font-size:14px;line-height:1.7" id="microComment"></div>
-      <div class="small-note">Micro = partea care începe să se strice prima. Aici apar cele mai utile avertismente timpurii pentru corecții.</div>
+      <div class="small-note">Micro = avertismentele timpurii. Aici vezi dacă începe slăbiciunea înainte de căderea mai mare.</div>
     </div>
 
     <div id="signalsTab" class="card hidden">
       <div class="section-title">Signals</div>
-      <div class="grid-3">
-        <div class="signal-box">
-          <h4>Confluențe</h4>
-          <ul class="clean" id="signalsList"></ul>
+      <div class="grid-3" style="margin-bottom:14px">
+        <div class="state-box">
+          <div class="state-title">Early Warning</div>
+          <div class="state-big" id="earlyState">--</div>
+          <div id="earlyText" class="explain"></div>
         </div>
-        <div class="signal-box">
-          <h4>Setup logic</h4>
-          <div id="setupLogic" class="hist-box"></div>
+        <div class="state-box">
+          <div class="state-title">Confirmation</div>
+          <div class="state-big" id="confirmState">--</div>
+          <div id="confirmText" class="explain"></div>
         </div>
-        <div class="signal-box">
-          <h4>Action map</h4>
-          <div id="signalsConclusion" class="hist-box"></div>
+        <div class="state-box">
+          <div class="state-title">Likely Move</div>
+          <div class="state-big" id="moveState">--</div>
+          <div id="moveText" class="explain"></div>
         </div>
       </div>
-      <div class="grid-3" style="margin-top:14px">
+
+      <div class="grid-3">
+        <div class="signal-box">
+          <h4>Why bearish now</h4>
+          <ul class="clean" id="bearishWhy"></ul>
+        </div>
+        <div class="signal-box">
+          <h4>Why not bearish yet</h4>
+          <ul class="clean" id="notBearishYet"></ul>
+        </div>
+        <div class="signal-box">
+          <h4>What invalidates this</h4>
+          <ul class="clean" id="invalidateList"></ul>
+        </div>
+      </div>
+
+      <div class="grid-4" style="margin-top:14px">
         <div class="signal-box">
           <h4>Hold</h4>
           <div class="progress"><div id="holdBar" style="width:0%;background:var(--safe)"></div></div>
@@ -230,7 +233,12 @@ footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-
           <div id="partialText" class="small-note"></div>
         </div>
         <div class="signal-box">
-          <h4>Re-accumulate / Wait</h4>
+          <h4>Wait for Confirmation</h4>
+          <div class="progress"><div id="waitBar" style="width:0%;background:var(--cyan)"></div></div>
+          <div id="waitText" class="small-note"></div>
+        </div>
+        <div class="signal-box">
+          <h4>Re-accumulate</h4>
           <div class="progress"><div id="reaccBar" style="width:0%;background:var(--purple)"></div></div>
           <div id="reaccText" class="small-note"></div>
         </div>
@@ -244,14 +252,18 @@ footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-
         <div>
           <div class="section-title">Dominance chart</div>
           <div class="chart-wrap small"><canvas id="domChart"></canvas></div>
-          <div class="small-note">Dominance rămâne foarte util pentru a înțelege dacă piața e în risk-on sau risk-off și cât de favorabil este contextul pentru BTC vs ETH.</div>
+          <div class="small-note">Dominance e utilă ca filtru: dominance mare înseamnă, de obicei, context mai defensiv și apetit mai slab pentru rotație în restul pieței.</div>
+          <div class="callout" style="margin-top:12px">
+            <div class="callout-title">Exemple istorice</div>
+            <div id="historyExamples" class="explain"></div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
   <footer>
-    V12 static HTML pentru GitHub Pages. Date live din Binance și CoinGecko. RSI este calculat local și afișat cu benzi 30/50/70.<br>
+    V14 static HTML pentru GitHub Pages. Date live din Binance și CoinGecko. RSI este calculat local și afișat cu benzi 30/50/70.<br>
     Funding și dominance chart sunt orientative pentru compatibilitate statică. MVRV este în continuare proxy.
   </footer>
 </div>
@@ -361,11 +373,45 @@ function detectSignalState({shortBias, risk, rsiD, rsiW, dist}){
 function actionScores({risk, shortBias, patternState, rsiW, dist}){
   let hold = Math.max(0, 100 - risk);
   let partial = risk;
-  let reacc = 25;
-  if(patternState === 'Bullish reversal attempt') reacc = 70;
-  if(shortBias === 'Bearish' && risk >= 45) reacc = 20;
+  let wait = 40;
+  let reacc = 20;
+  if(patternState === 'Bullish reversal attempt'){ wait = 65; reacc = 55; }
+  if(patternState === 'Neutral / mixed'){ wait = 70; }
+  if(shortBias === 'Bearish' && risk >= 45){ wait = 35; reacc = 15; }
   if(rsiW > 70 || dist > 25) partial = Math.min(100, partial + 10);
-  return { hold: Math.round(hold), partial: Math.round(partial), reacc: Math.round(reacc) };
+  if(risk < 35 && shortBias === 'Bullish'){ hold = Math.min(100, hold + 15); }
+  return { hold: Math.round(hold), partial: Math.round(partial), wait: Math.round(wait), reacc: Math.round(reacc) };
+}
+function buildEarlyWarning({rsiD, rsiW, funding, dist, mvrv, shortBias}) {
+  let score = 0;
+  const reasons = [];
+  if(rsiD < 50) { score += 20; reasons.push('RSI daily sub 50'); }
+  if(rsiW > 60) { score += 20; reasons.push('RSI weekly încă ridicat'); }
+  if(funding > 0.01) { score += 20; reasons.push('Funding pozitiv ridicat'); }
+  if(dist > 15) { score += 20; reasons.push('Preț încă sus față de EMA200'); }
+  if(mvrv > 2.0) { score += 20; reasons.push('MVRV proxy peste neutru'); }
+  if(shortBias === 'Bearish') reasons.push('Bias scurt bearish');
+  const state = score >= 70 ? 'HIGH' : score >= 40 ? 'MEDIUM' : 'LOW';
+  return { score, state, reasons };
+}
+function buildConfirmation({shortBias, rsiD, dist, patternState}) {
+  let score = 0;
+  const reasons = [];
+  if(shortBias === 'Bearish') { score += 35; reasons.push('Bias bearish activ'); }
+  if(rsiD < 45) { score += 25; reasons.push('RSI daily sub 45'); }
+  if(dist < 0) { score += 25; reasons.push('Preț sub EMA200'); }
+  if(patternState === 'Bearish continuation' || patternState === 'Distribution / early breakdown') { score += 15; reasons.push('Structură de breakdown'); }
+  const state = score >= 70 ? 'CONFIRMED' : score >= 40 ? 'PENDING' : 'NO';
+  return { score, state, reasons };
+}
+function likelyMove({early, confirm, risk}) {
+  const dropProb = Math.min(85, Math.round((risk * 0.6) + (early.score * 0.2) + (confirm.score * 0.2)));
+  const bounceProb = Math.max(15, 100 - dropProb);
+  return {
+    dropProb,
+    bounceProb,
+    text: dropProb >= 65 ? 'Drop likely' : dropProb >= 45 ? 'High volatility / mixed' : 'Bounce / stabilization possible'
+  };
 }
 function processAsset(symbol, ticker, dailyRaw, weeklyRaw, fundingRaw, dominance, ethbtc){
   const dCl = closes(dailyRaw);
@@ -417,6 +463,31 @@ function processAsset(symbol, ticker, dailyRaw, weeklyRaw, fundingRaw, dominance
   else if(risk >= 45) exec = 'Atenție — distribuție posibilă';
   else if(shortBias === 'Bullish') exec = 'Hold / constructive';
 
+  const early = buildEarlyWarning({rsiD,rsiW,funding,dist,mvrv,shortBias});
+  const confirm = buildConfirmation({shortBias,rsiD,dist,patternState});
+  const move = likelyMove({early,confirm,risk});
+
+  const bearishWhy = [];
+  if(shortBias === 'Bearish') bearishWhy.push('Bias-ul pe termen scurt este bearish.');
+  if(rsiD < 50) bearishWhy.push('RSI daily a pierdut zona neutră de 50.');
+  if(funding > 0.01) bearishWhy.push('Funding-ul rămâne pozitiv și expune piața la unwind.');
+  if(dist > 15) bearishWhy.push('Prețul rămâne încă deasupra mediei lungi, deci există spațiu de corecție.');
+  if(patternState.includes('breakdown') || patternState.includes('continuation')) bearishWhy.push('Structura seamănă cu breakdown / continuation.');
+  if(!bearishWhy.length) bearishWhy.push('Nu există suficiente motive bearish puternice.');
+
+  const notBearishYet = [];
+  if(rsiW > 50) notBearishYet.push('RSI weekly nu e complet distrus.');
+  if(dist > 0) notBearishYet.push('Prețul nu a pierdut EMA200.');
+  if(patternState === 'Bullish reversal attempt' || shortBias === 'Bullish') notBearishYet.push('Există o tentativă de stabilizare / rebound.');
+  if(mvrv < 2.6) notBearishYet.push('MVRV proxy nu este în zona extremă maximă.');
+  if(!notBearishYet.length) notBearishYet.push('Argumentele de apărare sunt slabe.');
+
+  const invalidateList = [];
+  invalidateList.push('RSI daily revine și se stabilizează peste 50.');
+  invalidateList.push('Prețul recuperează și menține structura fără breakdown nou.');
+  invalidateList.push('Funding-ul se răcește fără alt selloff major.');
+  if(symbol === 'ETH') invalidateList.push('ETH/BTC începe să arate mai bine și rotația capitalului se îmbunătățește.');
+
   const macroComment =
     `Pe ${symbol}, partea macro arată <strong>${phase}</strong>. RSI weekly este <strong>${rsiW.toFixed(1)}</strong>, MVRV proxy <strong>${mvrv.toFixed(2)}</strong> (${mvrvZone}), iar deviația față de EMA200 este <strong>${fmtPct(dist)}</strong>. ` +
     (risk >= 70
@@ -438,8 +509,12 @@ function processAsset(symbol, ticker, dailyRaw, weeklyRaw, fundingRaw, dominance
     <p><strong>RSI weekly:</strong> peste 70 semnalează supraîncălzire. Nu înseamnă top exact, ci faptul că riscul începe să crească.</p>
     <p><strong>RSI chart:</strong> liniile 30 / 50 / 70 te ajută să vezi rapid când momentum-ul este supravândut, neutru sau supraîncălzit.</p>
     <p><strong>Funding:</strong> când rămâne ridicat mai multe sesiuni, leverage-ul pe long se acumulează și piața devine sensibilă la unwind.</p>
-    <p><strong>Action map:</strong> nu urmărește perfecțiunea, ci managementul riscului. Ideea este să vezi când treci de la hold la protejare de profit sau, dimpotrivă, când începe să apară un context de re-acumulare.</p>
+    <p><strong>Early warning vs confirmation:</strong> strategia ta corectă este să reduci prima dată la avertisment puternic și abia apoi să vinzi mai agresiv la confirmarea breakdown-ului.</p>
   `;
+
+  const historyExamples = symbol === 'BTC'
+    ? `• Când RSI weekly a urcat în supraîncălzire și MVRV a intrat în roșu, topurile macro au devenit mult mai probabile.<br>• Când RSI daily s-a rupt primul, adesea acelea au fost avertismente timpurii înainte de corecții mai mari.`
+    : `• ETH tinde să fie mai volatil decât BTC și poate pierde structură mai repede când ETH/BTC slăbește.<br>• Când ETH/BTC se deteriorează și funding-ul rămâne ridicat, rebound-urile devin mai puțin de încredere.`;
 
   const setupLogic = patternState === 'Bearish continuation'
     ? `Semnalele scurte sunt bearish, iar contextul macro nu oferă suficient sprijin. Bounce-urile tind să fie de vândut, nu de urmărit agresiv.`
@@ -454,7 +529,8 @@ function processAsset(symbol, ticker, dailyRaw, weeklyRaw, fundingRaw, dominance
   return {
     symbol, price, chg, funding, dominance, dist, rsiD, rsiW, rsiDSeries, mvrv, mvrvSeries,
     phase, shortBias, risk, mvrvZone, signalLines, exec, hist, macroComment, microComment, dCl, ethbtc, patternState, setupLogic,
-    actions: actionScores({risk, shortBias, patternState, rsiW, dist})
+    actions: actionScores({risk, shortBias, patternState, rsiW, dist}), historyExamples,
+    early, confirm, move, bearishWhy, notBearishYet, invalidateList
   };
 }
 function setBadge(el, text, cls){
@@ -492,8 +568,8 @@ function renderHome(){
   setBadge('ethSummaryBadge', labelRisk(eth.risk), clsRisk(eth.risk));
   document.getElementById('btcSummaryText').innerHTML = `Phase: <strong>${btc.phase}</strong><br>Short-term: <strong>${btc.shortBias}</strong><br>Action: <strong>${btc.exec}</strong>`;
   document.getElementById('ethSummaryText').innerHTML = `Phase: <strong>${eth.phase}</strong><br>Short-term: <strong>${eth.shortBias}</strong><br>Action: <strong>${eth.exec}</strong>`;
-  document.getElementById('btcActionBias').innerHTML = `Hold ${btc.actions.hold}% · Partial profit ${btc.actions.partial}% · Re-accumulate ${btc.actions.reacc}%`;
-  document.getElementById('ethActionBias').innerHTML = `Hold ${eth.actions.hold}% · Partial profit ${eth.actions.partial}% · Re-accumulate ${eth.actions.reacc}%`;
+  document.getElementById('btcActionBias').innerHTML = `Hold ${btc.actions.hold}% · Partial profit ${btc.actions.partial}% · Wait ${btc.actions.wait}% · Re-accumulate ${btc.actions.reacc}%`;
+  document.getElementById('ethActionBias').innerHTML = `Hold ${eth.actions.hold}% · Partial profit ${eth.actions.partial}% · Wait ${eth.actions.wait}% · Re-accumulate ${eth.actions.reacc}%`;
   document.getElementById('homeRiskBtc').textContent = btc.risk + '/100';
   document.getElementById('homeRiskEth').textContent = eth.risk + '/100';
   document.getElementById('homeDom').textContent = store.dom.toFixed(1) + '%';
@@ -507,18 +583,16 @@ function renderHome(){
   setBadge('marketState', regime.toUpperCase(), regime.includes('Risk') || regime.includes('bearish') ? 'danger' : (regime.includes('attempt')?'warn':'safe'));
 
   const alerts = [];
-  if(btc.risk >= 70) alerts.push(['danger', 'BTC: confluență bearish puternică — zonă de protejare a profitului.']);
-  else if(btc.risk >= 45) alerts.push(['warn', 'BTC: risc în creștere — distribuție sau corecție mai amplă posibilă.']);
-  else alerts.push(['safe', 'BTC: fără semnal bearish major confirmat în acest moment.']);
-  if(eth.risk >= 70) alerts.push(['danger', 'ETH: risc ridicat — expunerea merită reevaluată.']);
-  else if(eth.risk >= 45) alerts.push(['warn', 'ETH: atenție — semnalele încep să se deterioreze.']);
-  else alerts.push(['safe', 'ETH: context încă relativ stabil.']);
-  if(btc.patternState === 'Bullish reversal attempt' || eth.patternState === 'Bullish reversal attempt') alerts.push(['warn', 'Există o tentativă de bullish reversal. Confirmarea trebuie să vină din time frame-urile mari, nu doar din bounce.']);
+  if(btc.early.state === 'HIGH') alerts.push(['warn', 'BTC: Early Warning HIGH — reduce parțial are sens chiar înainte de confirmare.']);
+  if(btc.confirm.state === 'CONFIRMED') alerts.push(['danger', 'BTC: Confirmation active — sell / profit taking devine mult mai justificat.']);
+  if(eth.early.state === 'HIGH') alerts.push(['warn', 'ETH: Early Warning HIGH — slăbiciunea poate accelera rapid.']);
+  if(eth.confirm.state === 'CONFIRMED') alerts.push(['danger', 'ETH: Confirmation active — breakdown-ul pare mai credibil.']);
+  if(!alerts.length) alerts.push(['safe', 'Nu există momentan combinația completă de avertisment + confirmare pentru un move major.']);
 
   document.getElementById('alertsBox').innerHTML = alerts.map(a => `<div class="alert ${a[0]}">${a[1]}</div>`).join('');
   document.getElementById('marketComment').innerHTML =
-    `V12 pune accent mai clar pe <strong>ce faci</strong>, nu doar pe ce vezi. 
-     Home-ul rămâne curat, dar acum poți interpreta mai repede dacă situația cere <strong>hold</strong>, <strong>partial profit</strong> sau <strong>re-accumulate / wait</strong>.`;
+    `V14 pune accent pe exact ce ai vrut: <strong>Early Warning</strong>, apoi <strong>Confirmation</strong>, apoi <strong>Action</strong>. 
+     Ideea nu este să ghicești perfect topul, ci să reduci înainte de dump și să vinzi mai agresiv doar când breakdown-ul se confirmă.`;
 }
 function renderAsset(asset){
   const d = store[asset];
@@ -544,21 +618,28 @@ function renderAsset(asset){
   document.getElementById('microPattern').textContent = d.patternState;
   document.getElementById('microComment').innerHTML = d.microComment;
 
-  document.getElementById('signalsList').innerHTML = d.signalLines.map(x => `<li>${x}</li>`).join('');
-  document.getElementById('setupLogic').innerHTML = d.setupLogic;
-  document.getElementById('signalsConclusion').innerHTML =
-    `<strong>Action:</strong> ${d.exec}<br><br>` +
-    `Risk score-ul este <strong>${d.risk}/100</strong>. Acest scor nu este o probabilitate statistică, ci o măsură a intensității confluentei bearish / bullish. 
-     Cu cât urcă, cu atât contextul seamănă mai mult cu zonele în care istoric au apărut distribuție sau corecții ample.`;
+  document.getElementById('earlyState').textContent = d.early.state;
+  document.getElementById('earlyText').innerHTML = `Scor ${d.early.score}/100. ${d.early.reasons.join(' · ') || 'Fără avertismente importante.'}`;
+  document.getElementById('confirmState').textContent = d.confirm.state;
+  document.getElementById('confirmText').innerHTML = `Scor ${d.confirm.score}/100. ${d.confirm.reasons.join(' · ') || 'Fără confirmări puternice.'}`;
+  document.getElementById('moveState').textContent = d.move.text;
+  document.getElementById('moveText').innerHTML = `Prob. drop: <strong>${d.move.dropProb}%</strong> · Prob. bounce/stabilizare: <strong>${d.move.bounceProb}%</strong>`;
+
+  document.getElementById('bearishWhy').innerHTML = d.bearishWhy.map(x => `<li>${x}</li>`).join('');
+  document.getElementById('notBearishYet').innerHTML = d.notBearishYet.map(x => `<li>${x}</li>`).join('');
+  document.getElementById('invalidateList').innerHTML = d.invalidateList.map(x => `<li>${x}</li>`).join('');
 
   document.getElementById('holdBar').style.width = d.actions.hold + '%';
   document.getElementById('partialBar').style.width = d.actions.partial + '%';
+  document.getElementById('waitBar').style.width = d.actions.wait + '%';
   document.getElementById('reaccBar').style.width = d.actions.reacc + '%';
   document.getElementById('holdText').textContent = d.actions.hold >= 60 ? 'Context relativ sănătos sau constructiv.' : 'Hold-ul nu mai are edge dominant.';
   document.getElementById('partialText').textContent = d.actions.partial >= 60 ? 'Merită apărat profitul mai atent.' : 'Semnalul de profit-taking nu domină încă.';
+  document.getElementById('waitText').textContent = d.actions.wait >= 60 ? 'Confirmarea încă lipsește. Răbdarea poate avea edge.' : 'Nu e doar o fază de așteptare.';
   document.getElementById('reaccText').textContent = d.actions.reacc >= 60 ? 'Apare teren pentru re-accumulare sau confirmare.' : 'Nu există încă setup bun de re-accumulare.';
 
   document.getElementById('historyText').innerHTML = d.hist;
+  document.getElementById('historyExamples').innerHTML = d.historyExamples;
 
   const labels = d.dCl.slice(-120).map((_,i)=>i+1);
   renderLineChart('priceChart', labels, [{
