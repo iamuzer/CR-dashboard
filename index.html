@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Crypto Dashboard V5 PRO</title>
+<style>
+body { background:#0b0f14; color:#e8f0f8; font-family:Arial; padding:20px }
+.card { background:#111826; padding:20px; margin:10px 0; border-radius:10px }
+.red{color:#ff4d4f} .green{color:#00e87a} .yellow{color:#f5c542}
+</style>
+</head>
+
+<body>
+
+<h2>Crypto Risk Dashboard V5</h2>
+
+<div class="card"><h3>BTC</h3><div id="btc"></div></div>
+<div class="card"><h3>ETH</h3><div id="eth"></div></div>
+<div class="card"><h3>Alerts</h3><div id="alerts"></div></div>
+<div class="card"><h3>Market Commentary</h3><div id="comment"></div></div>
+
+<script>
+
+async function getKlines(symbol){
+  const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1d&limit=365`);
+  return await res.json();
+}
+
+async function getFunding(symbol){
+  const res = await fetch(`https://fapi.binance.com/fapi/v1/premiumIndex?symbol=${symbol}`);
+  const data = await res.json();
+  return parseFloat(data.lastFundingRate);
+}
+
+async function getBTCdominance(){
+  const res = await fetch("https://api.coingecko.com/api/v3/global");
+  const data = await res.json();
+  return data.data.market_cap_percentage.btc;
+}
+
+function calcRSI(data){
+  let gains=0, losses=0;
+  for(let i=data.length-14; i<data.length-1; i++){
+    let diff = data[i+1][4] - data[i][4];
+    if(diff>0) gains+=diff; else losses-=diff;
+  }
+  let rs = gains/(losses||1);
+  return 100 - (100/(1+rs));
+}
+
+function calcEMA(data, period){
+  let k = 2/(period+1);
+  let ema = data[0][4];
+  data.forEach(c=>{ ema = c[4]*k + ema*(1-k); });
+  return ema;
+}
+
+function estimateMVRV(price, avgPrice){
+  let ratio = price / avgPrice;
+  if(ratio > 3) return {value: ratio.toFixed(2), zone:"🔴 TOP ZONE"};
+  if(ratio < 1) return {value: ratio.toFixed(2), zone:"🟢 ACCUMULATION"};
+  return {value: ratio.toFixed(2), zone:"🟡 NEUTRAL"};
+}
+
+function calcRisk(rsi, distance, funding, dominance, mvrv){
+  let risk = 0;
+  if(rsi > 70) risk += 20;
+  if(distance > 25) risk += 20;
+  if(funding > 0.01) risk += 15;
+  if(dominance > 55) risk += 10;
+  if(mvrv.value > 2.5) risk += 15;
+  if(distance < 0) risk += 20;
+  return Math.min(risk,100);
+}
+
+function getAlerts(risk, mvrv){
+  let alerts = [];
+  if(risk > 70) alerts.push("🚨 High crash risk");
+  if(risk > 50) alerts.push("⚠️ Distribution phase");
+  if(mvrv.zone.includes("TOP")) alerts.push("🔴 MVRV indicates macro top zone");
+  return alerts.join("<br>");
+}
+
+function commentary(risk, mvrv){
+  if(risk > 70) return "Market overheated. High probability of correction. Consider taking profit.";
+  if(mvrv.zone.includes("TOP")) return "Macro top zone detected. Risk elevated.";
+  if(risk > 50) return "Distribution phase likely. Stay cautious.";
+  return "Market conditions normal.";
+}
+
+async function load(symbol, el, dominance){
+  let data = await getKlines(symbol);
+  let funding = await getFunding(symbol);
+
+  let price = Number(data[data.length-1][4]);
+  let rsi = calcRSI(data);
+  let ema200 = calcEMA(data.slice(-200),200);
+
+  let avgPrice = data.reduce((sum,c)=>sum+Number(c[4]),0)/data.length;
+
+  let distance = ((price-ema200)/ema200)*100;
+  let mvrv = estimateMVRV(price, avgPrice);
+  let risk = calcRisk(rsi,distance,funding,dominance,mvrv);
+
+  document.getElementById(el).innerHTML = `
+  Price: $${price.toFixed(0)}<br>
+  RSI: ${rsi.toFixed(1)}<br>
+  EMA200 Distance: ${distance.toFixed(1)}%<br>
+  Funding: ${funding}<br>
+  BTC Dominance: ${dominance.toFixed(1)}%<br>
+  MVRV: ${mvrv.value} (${mvrv.zone})<br>
+  Risk: ${risk}%
+  `;
+
+  return {risk, mvrv};
+}
+
+async function init(){
+  let dominance = await getBTCdominance();
+  let btc = await load("BTCUSDT","btc",dominance);
+  await load("ETHUSDT","eth",dominance);
+
+  document.getElementById("alerts").innerHTML = getAlerts(btc.risk, btc.mvrv);
+  document.getElementById("comment").innerText = commentary(btc.risk, btc.mvrv);
+}
+
+init();
+setInterval(init,20000);
+
+</script>
+
+</body>
+</html>
