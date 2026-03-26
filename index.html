@@ -3,48 +3,48 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Crypto Dashboard V9</title>
+<title>Crypto Dashboard V10</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 :root{
-  --bg:#070b0f;--panel:#0c1118;--border:#172030;--safe:#00e87a;--warn:#ffb300;--danger:#ff3355;
-  --neutral:#4a6080;--btc:#f7931a;--eth:#627eea;--text:#b8cde0;--white:#e8f0f8;
+  --bg:#070b0f;--panel:#0c1118;--panel2:#101823;--border:#172030;--safe:#00e87a;--warn:#ffb300;--danger:#ff3355;
+  --neutral:#4a6080;--btc:#f7931a;--eth:#627eea;--text:#b8cde0;--white:#e8f0f8;--cyan:#22d3ee;--purple:#a78bfa;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
-.wrap{max-width:1180px;margin:0 auto;padding:20px}
-h1,h2,h3,h4,p{margin:0}
-.header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}
-.logo{font-weight:700;letter-spacing:.08em;color:var(--safe)}
+.wrap{max-width:1240px;margin:0 auto;padding:20px}
+.header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px}
+.logo{font-weight:700;letter-spacing:.12em;color:var(--safe)}
 .sync{font-size:12px;color:var(--neutral)}
+.card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--border);border-radius:16px;padding:18px}
+.hero{margin-bottom:16px}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px}
-.hero{margin-bottom:14px}
-.asset-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpi .label{font-size:12px;color:var(--neutral);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.kpi .value{font-size:24px;color:var(--white);font-weight:700}
+.asset-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
 .asset-title{display:flex;align-items:center;gap:10px}
-.coin{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700}
+.coin{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700}
 .btc{background:rgba(247,147,26,.12);border:1px solid rgba(247,147,26,.35);color:var(--btc)}
 .eth{background:rgba(98,126,234,.12);border:1px solid rgba(98,126,234,.35);color:var(--eth)}
-.price{font-size:26px;font-weight:700;color:var(--white)}
+.price{font-size:28px;font-weight:700;color:var(--white)}
 .chg{font-size:13px}
 .pos{color:var(--safe)} .neg{color:var(--danger)}
-.badge{padding:4px 8px;border-radius:999px;font-size:12px;border:1px solid}
+.badge{padding:5px 10px;border-radius:999px;font-size:12px;border:1px solid}
 .badge.safe{color:var(--safe);border-color:rgba(0,232,122,.25);background:rgba(0,232,122,.06)}
 .badge.warn{color:var(--warn);border-color:rgba(255,179,0,.25);background:rgba(255,179,0,.06)}
 .badge.danger{color:var(--danger);border-color:rgba(255,51,85,.25);background:rgba(255,51,85,.06)}
 .muted{color:var(--neutral)}
-.main-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-.btn{padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#101823;color:var(--white);cursor:pointer}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.btn{padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:#101823;color:var(--white);cursor:pointer}
 .btn:hover{background:#132031}
-.btn.primary{border-color:rgba(0,232,122,.3);color:var(--safe)}
+.btn.primary{border-color:rgba(0,232,122,.35);color:var(--safe)}
 .hidden{display:none!important}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .tab{padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#101823;color:var(--text);cursor:pointer}
 .tab.active{color:var(--white);border-color:rgba(0,232,122,.35);background:rgba(0,232,122,.08)}
-.kpi{display:flex;flex-direction:column;gap:4px}
-.kpi .label{font-size:12px;color:var(--neutral);text-transform:uppercase;letter-spacing:.06em}
-.kpi .value{font-size:22px;font-weight:700;color:var(--white)}
+.section-title{font-size:12px;color:var(--neutral);text-transform:uppercase;letter-spacing:.12em;margin-bottom:10px}
 .alerts{display:flex;flex-direction:column;gap:8px}
 .alert{padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.45}
 .alert.safe{background:rgba(0,232,122,.06);border:1px solid rgba(0,232,122,.18);color:var(--safe)}
@@ -52,18 +52,21 @@ h1,h2,h3,h4,p{margin:0}
 .alert.danger{background:rgba(255,51,85,.06);border:1px solid rgba(255,51,85,.18);color:var(--danger)}
 ul.clean{padding-left:18px;margin:0}
 ul.clean li{margin:6px 0}
-canvas{width:100%!important;max-height:290px}
-.section-title{font-size:12px;color:var(--neutral);text-transform:uppercase;letter-spacing:.12em;margin-bottom:10px}
-.hist-box{font-size:14px;line-height:1.7}
+.chart-wrap{height:300px}
+.chart-wrap.small{height:260px}
+canvas{width:100%!important;height:100%!important}
+.hist-box{font-size:14px;line-height:1.75}
+.signal-box{padding:12px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.14)}
+.signal-box h4{margin:0 0 8px 0;color:var(--white)}
 footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-align:center}
-@media (max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}.header{flex-direction:column;align-items:flex-start}}
+@media (max-width:1000px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr}.header{flex-direction:column;align-items:flex-start}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="header">
     <div>
-      <div class="logo">CRYPTO DASHBOARD <span class="muted">V9</span></div>
+      <div class="logo">CRYPTO DASHBOARD <span class="muted">V10</span></div>
       <div class="sync" id="syncText">Se încarcă...</div>
     </div>
     <div class="badge warn" id="marketState">ANALIZĂ ÎN CURS</div>
@@ -72,12 +75,13 @@ footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-
   <div id="homeView">
     <div class="card hero">
       <div class="section-title">Home</div>
-      <div class="grid-3">
+      <div class="grid-4">
         <div class="kpi"><div class="label">Regim piață</div><div class="value" id="homeRegime">--</div></div>
         <div class="kpi"><div class="label">Risk BTC</div><div class="value" id="homeRiskBtc">--</div></div>
         <div class="kpi"><div class="label">Risk ETH</div><div class="value" id="homeRiskEth">--</div></div>
+        <div class="kpi"><div class="label">Dominance</div><div class="value" id="homeDom">--</div></div>
       </div>
-      <div class="main-actions">
+      <div class="actions">
         <button class="btn primary" onclick="openAsset('BTC')">Vezi BTC în detaliu</button>
         <button class="btn primary" onclick="openAsset('ETH')">Vezi ETH în detaliu</button>
       </div>
@@ -88,10 +92,7 @@ footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-
         <div class="asset-head">
           <div class="asset-title">
             <div class="coin btc">₿</div>
-            <div>
-              <div style="font-weight:700">BTC</div>
-              <div class="muted" style="font-size:12px">Summary</div>
-            </div>
+            <div><div style="font-weight:700">BTC</div><div class="muted" style="font-size:12px">Summary</div></div>
           </div>
           <div class="badge" id="btcSummaryBadge">--</div>
         </div>
@@ -104,10 +105,7 @@ footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-
         <div class="asset-head">
           <div class="asset-title">
             <div class="coin eth">Ξ</div>
-            <div>
-              <div style="font-weight:700">ETH</div>
-              <div class="muted" style="font-size:12px">Summary</div>
-            </div>
+            <div><div style="font-weight:700">ETH</div><div class="muted" style="font-size:12px">Summary</div></div>
           </div>
           <div class="badge" id="ethSummaryBadge">--</div>
         </div>
@@ -125,7 +123,7 @@ footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-
   </div>
 
   <div id="assetView" class="hidden">
-    <div class="main-actions" style="margin-bottom:12px">
+    <div class="actions" style="margin-bottom:12px">
       <button class="btn" onclick="goHome()">⬅ Înapoi la Home</button>
     </div>
 
@@ -133,17 +131,15 @@ footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-
       <div class="asset-head">
         <div class="asset-title">
           <div class="coin" id="detailCoin">₿</div>
-          <div>
-            <div style="font-weight:700" id="detailTitle">BTC</div>
-            <div class="muted" style="font-size:12px">Analiză completă</div>
-          </div>
+          <div><div style="font-weight:700" id="detailTitle">BTC</div><div class="muted" style="font-size:12px">Analiză completă</div></div>
         </div>
         <div class="badge" id="detailBadge">--</div>
       </div>
-      <div class="grid-3">
+      <div class="grid-4">
         <div class="kpi"><div class="label">Preț</div><div class="value" id="detailPrice">--</div></div>
         <div class="kpi"><div class="label">Risk score</div><div class="value" id="detailRisk">--</div></div>
         <div class="kpi"><div class="label">Phase</div><div class="value" id="detailPhase">--</div></div>
+        <div class="kpi"><div class="label">Action</div><div class="value" id="detailAction">--</div></div>
       </div>
     </div>
 
@@ -156,19 +152,20 @@ footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-
 
     <div id="macroTab" class="card">
       <div class="section-title">Macro</div>
-      <div class="grid-3" style="margin-bottom:14px">
+      <div class="grid-4" style="margin-bottom:14px">
         <div class="kpi"><div class="label">RSI Daily</div><div class="value" id="macroRsiD">--</div></div>
         <div class="kpi"><div class="label">RSI Weekly</div><div class="value" id="macroRsiW">--</div></div>
         <div class="kpi"><div class="label">MVRV proxy</div><div class="value" id="macroMvrv">--</div></div>
+        <div class="kpi"><div class="label">ETH/BTC ratio</div><div class="value" id="macroEthBtc">--</div></div>
       </div>
       <div class="grid-2">
         <div>
           <div class="section-title">Price chart</div>
-          <canvas id="priceChart"></canvas>
+          <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
         </div>
         <div>
           <div class="section-title">MVRV chart</div>
-          <canvas id="mvrvChart"></canvas>
+          <div class="chart-wrap"><canvas id="mvrvChart"></canvas></div>
         </div>
       </div>
       <div style="margin-top:14px;font-size:14px;line-height:1.7" id="macroComment"></div>
@@ -176,19 +173,20 @@ footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-
 
     <div id="microTab" class="card hidden">
       <div class="section-title">Micro</div>
-      <div class="grid-3" style="margin-bottom:14px">
+      <div class="grid-4" style="margin-bottom:14px">
         <div class="kpi"><div class="label">Funding</div><div class="value" id="microFunding">--</div></div>
         <div class="kpi"><div class="label">Distance EMA200</div><div class="value" id="microDist">--</div></div>
         <div class="kpi"><div class="label">Short-term bias</div><div class="value" id="microBias">--</div></div>
+        <div class="kpi"><div class="label">Alert state</div><div class="value" id="microAlertState">--</div></div>
       </div>
       <div class="grid-2">
         <div>
-          <div class="section-title">RSI chart</div>
-          <canvas id="rsiChart"></canvas>
+          <div class="section-title">RSI chart (30 / 50 / 70)</div>
+          <div class="chart-wrap"><canvas id="rsiChart"></canvas></div>
         </div>
         <div>
           <div class="section-title">Dominance chart</div>
-          <canvas id="domChart"></canvas>
+          <div class="chart-wrap"><canvas id="domChart"></canvas></div>
         </div>
       </div>
       <div style="margin-top:14px;font-size:14px;line-height:1.7" id="microComment"></div>
@@ -197,12 +195,12 @@ footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-
     <div id="signalsTab" class="card hidden">
       <div class="section-title">Signals</div>
       <div class="grid-2">
-        <div>
-          <h4 style="margin-bottom:8px">Confluențe bearish / bullish</h4>
+        <div class="signal-box">
+          <h4>Confluențe</h4>
           <ul class="clean" id="signalsList"></ul>
         </div>
-        <div>
-          <h4 style="margin-bottom:8px">Concluzie executivă</h4>
+        <div class="signal-box">
+          <h4>Concluzie executivă</h4>
           <div id="signalsConclusion" class="hist-box"></div>
         </div>
       </div>
@@ -215,8 +213,8 @@ footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-
   </div>
 
   <footer>
-    V9 static HTML pentru GitHub Pages. Date live din Binance și CoinGecko. Graficele RSI și MVRV sunt generate local din seriile de preț.<br>
-    MVRV este un proxy, nu valoarea on-chain oficială. Tool pentru context și confluence, nu pentru decizie automată.
+    V10 static HTML pentru GitHub Pages. Date live din Binance și CoinGecko. RSI este calculat local și afișat cu benzi 30/50/70.<br>
+    MVRV este un proxy, nu valoarea on-chain oficială. Dominance chart este istoric simulat din valoarea actuală până adaugi o sursă istorică dedicată.
   </footer>
 </div>
 
@@ -227,16 +225,8 @@ let chartRefs = {};
 
 function fmtUsd(v){ return '$' + Math.round(v).toLocaleString('en-US'); }
 function fmtPct(v){ return (v>=0?'+':'') + v.toFixed(2) + '%'; }
-function clsRisk(r){
-  if(r >= 70) return 'danger';
-  if(r >= 45) return 'warn';
-  return 'safe';
-}
-function labelRisk(r){
-  if(r >= 70) return 'RISK RIDICAT';
-  if(r >= 45) return 'ATENȚIE';
-  return 'OK';
-}
+function clsRisk(r){ return r >= 70 ? 'danger' : (r >= 45 ? 'warn' : 'safe'); }
+function labelRisk(r){ return r >= 70 ? 'RISK RIDICAT' : (r >= 45 ? 'ATENȚIE' : 'OK'); }
 function switchTab(id, el){
   ['macroTab','microTab','signalsTab','historyTab'].forEach(x => document.getElementById(x).classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
@@ -306,7 +296,15 @@ function makeMvrvProxy(cl){
   const avg = cl.reduce((a,b)=>a+b,0) / cl.length;
   return cl.map(v => v / avg);
 }
-function processAsset(symbol, ticker, dailyRaw, weeklyRaw, fundingRaw, dominance){
+function buildDominanceSeries(current, len=120){
+  const arr = [];
+  for(let i=0;i<len;i++){
+    const drift = Math.sin(i/10) * 1.2 + Math.cos(i/17) * 0.6;
+    arr.push(Math.max(35, Math.min(70, current + drift)));
+  }
+  return arr;
+}
+function processAsset(symbol, ticker, dailyRaw, weeklyRaw, fundingRaw, dominance, ethbtc){
   const dCl = closes(dailyRaw);
   const wCl = closes(weeklyRaw);
   const price = Number(ticker.lastPrice);
@@ -321,15 +319,12 @@ function processAsset(symbol, ticker, dailyRaw, weeklyRaw, fundingRaw, dominance
   const funding = Number(fundingRaw.lastFundingRate) * 100;
   const mvrvSeries = makeMvrvProxy(dCl);
   const mvrv = mvrvSeries.at(-1);
+
   let risk = 0;
-  if(rsiW > 70) risk += 25;
-  else if(rsiW > 60) risk += 12;
-  if(dist > 25) risk += 25;
-  else if(dist > 15) risk += 12;
-  if(funding > 0.01) risk += 12;
-  else if(funding < -0.01) risk -= 5;
-  if(mvrv > 2.6) risk += 18;
-  else if(mvrv > 2.0) risk += 8;
+  if(rsiW > 70) risk += 25; else if(rsiW > 60) risk += 12;
+  if(dist > 25) risk += 25; else if(dist > 15) risk += 12;
+  if(funding > 0.01) risk += 12; else if(funding < -0.01) risk -= 5;
+  if(mvrv > 2.6) risk += 18; else if(mvrv > 2.0) risk += 8;
   if(rsiD < rsiDPrev) risk += 8;
   if(dominance > 55 && symbol === 'BTC') risk += 5;
   risk = Math.max(0, Math.min(100, Math.round(risk)));
@@ -343,42 +338,46 @@ function processAsset(symbol, ticker, dailyRaw, weeklyRaw, fundingRaw, dominance
   const mvrvZone = mvrv > 3 ? 'TOP ZONE 🔴' : (mvrv < 1 ? 'ACCUMULATION 🟢' : 'NEUTRAL 🟡');
 
   const signalLines = [];
-  if(rsiW > 70) signalLines.push('RSI weekly supraîncălzit — istoric asociat cu zone de top, nu cu sell exact.');
-  if(dist > 25) signalLines.push('Preț mult peste EMA200 — piață overextended, vulnerabilă la corecții.');
-  if(funding > 0.01) signalLines.push('Funding pozitiv ridicat — leverage pe long, risc de unwind.');
-  if(rsiD < rsiDPrev) signalLines.push('RSI daily scade — momentum-ul se răcește pe termen scurt.');
-  if(mvrv > 2.6) signalLines.push('MVRV proxy intră în zona roșie — context macro de evaluare ridicată.');
+  if(rsiW > 70) signalLines.push('RSI weekly supraîncălzit — zonă istoric asociată cu topuri, nu neapărat sell exact în aceeași zi.');
+  if(dist > 25) signalLines.push('Preț mult peste EMA200 — piață overextended, corecțiile tind să apară după astfel de deviații.');
+  if(funding > 0.01) signalLines.push('Funding pozitiv ridicat — piața este încărcată pe long și devine vulnerabilă la unwind.');
+  if(rsiD < rsiDPrev) signalLines.push('RSI daily scade — momentum-ul pe termen scurt se deteriorează.');
+  if(mvrv > 2.6) signalLines.push('MVRV proxy în zona roșie — context macro de evaluare ridicată.');
+  if(symbol === 'ETH' && ethbtc < 0.05) signalLines.push('ETH/BTC este slab — rotația capitalului nu favorizează ETH.');
   if(signalLines.length === 0) signalLines.push('Nu există încă o confluență bearish clară.');
 
   let exec = 'Hold / wait';
   if(risk >= 70) exec = 'Take partial profit / reduce exposure';
-  else if(risk >= 45) exec = 'Atenție — piață în distribuție posibilă';
+  else if(risk >= 45) exec = 'Atenție — distribuție posibilă';
   else if(shortBias === 'Bullish') exec = 'Hold / constructive';
 
-  let hist = `
-    <p><strong>MVRV:</strong> zona verde este asociată istoric cu acumulare după capitulare, iar zona roșie cu evaluare excesivă și topuri macro. Aici folosim un proxy bazat pe preț față de media extinsă, deci nu înlocuiește valoarea on-chain oficială, dar oferă context.</p>
-    <p><strong>RSI weekly:</strong> peste 70 semnalează supraîncălzire. Nu înseamnă că topul e fix mâine, ci că raportul risc/recompensă se deteriorează.</p>
+  const macroComment =
+    `Pe ${symbol}, partea macro arată <strong>${phase}</strong>. RSI weekly este <strong>${rsiW.toFixed(1)}</strong>, MVRV proxy <strong>${mvrv.toFixed(2)}</strong> (${mvrvZone}), iar deviația față de EMA200 este <strong>${fmtPct(dist)}</strong>. ` +
+    (risk >= 70
+      ? `Confluența actuală seamănă cu zonele în care istoric apărea distribuția și merita apărat profitul.`
+      : risk >= 45
+        ? `Contextul macro nu e încă un bear market complet confirmat, dar riscul crește și raportul risc/recompensă se deteriorează.`
+        : `Nu există deocamdată o supraîncălzire macro severă.`);
+
+  const microComment =
+    `Pe termen scurt, bias-ul este <strong>${shortBias}</strong>. RSI daily este <strong>${rsiD.toFixed(1)}</strong>, iar funding-ul este <strong>${fmtPct(funding)}</strong>. ` +
+    (shortBias === 'Bearish'
+      ? `Asta confirmă exact ideea ta: piața poate fi bearish pe short time frame înainte ca macro-ul să confirme complet bear marketul.`
+      : shortBias === 'Bullish'
+        ? `Momentum-ul scurt este încă constructiv, însă trebuie citit în contextul macro.`
+        : `Semnalele scurte sunt mixte.`);
+
+  const hist = `
+    <p><strong>MVRV:</strong> zona verde este asociată istoric cu acumulare după capitulare, iar zona roșie cu evaluare excesivă și topuri macro. Aici folosim un proxy pe baza prețului față de media extinsă, nu valoarea on-chain oficială.</p>
+    <p><strong>RSI weekly:</strong> peste 70 semnalează supraîncălzire. Nu înseamnă top exact, ci faptul că riscul începe să crească.</p>
+    <p><strong>RSI chart:</strong> liniile 30 / 50 / 70 te ajută să vezi rapid când momentum-ul e supravândut, neutru sau supraîncălzit, exact în stilul platformelor de charting.</p>
     <p><strong>EMA200 distance:</strong> când prețul urcă mult peste media lungă, piața tinde istoric să corecteze sau să intre în distribuție.</p>
-    <p><strong>Important:</strong> un singur semnal nu este suficient. Edge-ul real apare când RSI, distanța față de EMA, funding și MVRV merg în aceeași direcție.</p>
+    <p><strong>Important:</strong> edge-ul nu vine dintr-un indicator, ci din confluență: RSI + EMA distance + funding + context de cycle / MVRV.</p>
   `;
-
-  let macroComment = `Pe ${symbol}, partea macro arată <strong>${phase}</strong>. RSI weekly este <strong>${rsiW.toFixed(1)}</strong>, iar MVRV proxy este <strong>${mvrv.toFixed(2)}</strong> (${mvrvZone}). `;
-  macroComment += (risk >= 70)
-    ? `Confluența actuală sugerează că piața se află într-o zonă unde merită apărat profitul, nu urmărită agresiv continuarea.`
-    : (risk >= 45)
-      ? `Contextul seamănă mai degrabă cu distribuție sau tranziție decât cu trend sănătos fără risc.`
-      : `Nu există deocamdată o supraîncălzire macro severă.`;
-
-  let microComment = `Pe termen scurt, bias-ul este <strong>${shortBias}</strong>. RSI daily este <strong>${rsiD.toFixed(1)}</strong>, iar funding-ul este <strong>${fmtPct(funding)}</strong>. `;
-  microComment += shortBias === 'Bearish'
-    ? `Asta susține exact observația ta: piața poate fi bearish pe short time frame chiar fără confirmare completă de bear market macro.`
-    : shortBias === 'Bullish'
-      ? `Momentum-ul scurt rămâne constructiv, dar trebuie validat în contextul macro.`
-      : `Semnalele scurte sunt mixte, deci nu există încă direcție clară.`;
 
   return {
     symbol, price, chg, funding, dominance, dist, rsiD, rsiW, rsiDSeries, mvrv, mvrvSeries,
-    phase, shortBias, risk, mvrvZone, signalLines, exec, hist, macroComment, microComment, dCl
+    phase, shortBias, risk, mvrvZone, signalLines, exec, hist, macroComment, microComment, dCl, ethbtc
   };
 }
 function setBadge(el, text, cls){
@@ -389,16 +388,20 @@ function setBadge(el, text, cls){
 function destroyIf(name){
   if(chartRefs[name]) { chartRefs[name].destroy(); delete chartRefs[name]; }
 }
-function renderLineChart(id, data, label, color){
+function renderLineChart(id, labels, datasets, yOptions={}){
   destroyIf(id);
   chartRefs[id] = new Chart(document.getElementById(id), {
     type:'line',
-    data:{ labels:data.map((_,i)=>i+1), datasets:[{ data, label, borderColor: color, backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:.25 }]},
+    data:{ labels, datasets },
     options:{
       responsive:true,
-      maintainAspectRatio:true,
+      maintainAspectRatio:false,
       plugins:{ legend:{ display:false } },
-      scales:{ x:{ display:false }, y:{ ticks:{ color:'#4a6080' }, grid:{ color:'rgba(74,96,128,.15)' } } }
+      interaction:{ mode:'index', intersect:false },
+      scales:{
+        x:{ display:false, grid:{ color:'rgba(74,96,128,.08)' }, ticks:{ color:'#4a6080' } },
+        y:{ ticks:{ color:'#4a6080' }, grid:{ color:'rgba(74,96,128,.15)' }, ...yOptions }
+      }
     }
   });
 }
@@ -410,10 +413,11 @@ function renderHome(){
   document.getElementById('ethChg').textContent = fmtPct(eth.chg); document.getElementById('ethChg').className = 'chg ' + (eth.chg>=0?'pos':'neg');
   setBadge('btcSummaryBadge', labelRisk(btc.risk), clsRisk(btc.risk));
   setBadge('ethSummaryBadge', labelRisk(eth.risk), clsRisk(eth.risk));
-  document.getElementById('btcSummaryText').innerHTML = `Phase: <strong>${btc.phase}</strong><br>Short-term: <strong>${btc.shortBias}</strong><br>Exec: <strong>${btc.exec}</strong>`;
-  document.getElementById('ethSummaryText').innerHTML = `Phase: <strong>${eth.phase}</strong><br>Short-term: <strong>${eth.shortBias}</strong><br>Exec: <strong>${eth.exec}</strong>`;
+  document.getElementById('btcSummaryText').innerHTML = `Phase: <strong>${btc.phase}</strong><br>Short-term: <strong>${btc.shortBias}</strong><br>Action: <strong>${btc.exec}</strong>`;
+  document.getElementById('ethSummaryText').innerHTML = `Phase: <strong>${eth.phase}</strong><br>Short-term: <strong>${eth.shortBias}</strong><br>Action: <strong>${eth.exec}</strong>`;
   document.getElementById('homeRiskBtc').textContent = btc.risk + '/100';
   document.getElementById('homeRiskEth').textContent = eth.risk + '/100';
+  document.getElementById('homeDom').textContent = store.dom.toFixed(1) + '%';
 
   let regime = 'Mixed';
   if(btc.risk >= 70 || eth.risk >= 70) regime = 'Distribution / Risk-off';
@@ -429,13 +433,13 @@ function renderHome(){
   if(eth.risk >= 70) alerts.push(['danger', 'ETH: risc ridicat — expunerea merită reevaluată.']);
   else if(eth.risk >= 45) alerts.push(['warn', 'ETH: atenție — semnalele încep să se deterioreze.']);
   else alerts.push(['safe', 'ETH: context încă relativ stabil.']);
-  if(btc.shortBias === 'Bearish' || eth.shortBias === 'Bearish') alerts.push(['warn', 'Short time frame-ul este bearish. Bounce-urile trebuie tratate cu prudență până la reconfirmare.']);
+  if(btc.shortBias === 'Bearish' || eth.shortBias === 'Bearish') alerts.push(['warn', 'Timeframe-ul scurt este bearish. Bounce-urile trebuie tratate defensiv până la reconfirmare.']);
 
   document.getElementById('alertsBox').innerHTML = alerts.map(a => `<div class="alert ${a[0]}">${a[1]}</div>`).join('');
   document.getElementById('marketComment').innerHTML =
     `Piața trebuie citită pe două viteze: <strong>macro</strong> și <strong>micro</strong>. 
      Dacă micro devine bearish înaintea macro-ului, exact acolo apar primele avertismente de corecție. 
-     În prezent, dashboardul pune accent pe <strong>confluențe</strong>: RSI, distanță față de EMA200, funding, MVRV proxy și context de dominance.`;
+     V10 pune accent pe <strong>confluențe</strong>: RSI, distanță față de EMA200, funding, MVRV proxy, dominance și ETH/BTC.`;
 }
 function renderAsset(asset){
   const d = store[asset];
@@ -447,39 +451,60 @@ function renderAsset(asset){
   document.getElementById('detailPrice').textContent = fmtUsd(d.price);
   document.getElementById('detailRisk').textContent = d.risk + '/100';
   document.getElementById('detailPhase').textContent = d.phase;
+  document.getElementById('detailAction').textContent = d.exec;
 
   document.getElementById('macroRsiD').textContent = d.rsiD.toFixed(1);
   document.getElementById('macroRsiW').textContent = d.rsiW.toFixed(1);
   document.getElementById('macroMvrv').textContent = d.mvrv.toFixed(2) + ' · ' + d.mvrvZone;
+  document.getElementById('macroEthBtc').textContent = d.ethbtc.toFixed(4);
   document.getElementById('macroComment').innerHTML = d.macroComment;
 
   document.getElementById('microFunding').textContent = fmtPct(d.funding);
   document.getElementById('microDist').textContent = fmtPct(d.dist);
   document.getElementById('microBias').textContent = d.shortBias;
+  document.getElementById('microAlertState').textContent = labelRisk(d.risk);
   document.getElementById('microComment').innerHTML = d.microComment;
 
   document.getElementById('signalsList').innerHTML = d.signalLines.map(x => `<li>${x}</li>`).join('');
   document.getElementById('signalsConclusion').innerHTML =
     `<strong>Action:</strong> ${d.exec}<br><br>` +
-    `Risk score-ul este <strong>${d.risk}/100</strong>. Asta nu este o probabilitate statistică, ci o măsură de intensitate a confluentei bearish/bullish. 
-     Cu cât scorul urcă, cu atât contextul seamănă mai mult cu zonele în care istoric au apărut corecții sau distribuție.`;
+    `Risk score-ul este <strong>${d.risk}/100</strong>. Acest scor nu este o probabilitate statistică, ci o măsură a intensității confluentei bearish / bullish. 
+     Cu cât urcă, cu atât contextul seamănă mai mult cu zonele în care istoric au apărut distribuție sau corecții ample.`;
 
   document.getElementById('historyText').innerHTML = d.hist;
 
-  renderLineChart('priceChart', d.dCl.slice(-120), 'Price', asset === 'BTC' ? '#f7931a' : '#627eea');
-  renderLineChart('mvrvChart', d.mvrvSeries.slice(-120), 'MVRV', '#ffb300');
-  renderLineChart('rsiChart', d.rsiDSeries.slice(-120), 'RSI', '#22d3ee');
-  const domSeries = Array.from({length: 120}, () => store.dom);
-  renderLineChart('domChart', domSeries, 'BTC Dominance', '#a78bfa');
+  const labels = d.dCl.slice(-120).map((_,i)=>i+1);
+  renderLineChart('priceChart', labels, [{
+    data:d.dCl.slice(-120), borderColor: asset === 'BTC' ? '#f7931a' : '#627eea',
+    backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:.25
+  }]);
+  renderLineChart('mvrvChart', labels, [{
+    data:d.mvrvSeries.slice(-120), borderColor:'#ffb300', backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:.25
+  }]);
+  const rsiData = d.rsiDSeries.slice(-120);
+  const rsiLabels = rsiData.map((_,i)=>i+1);
+  renderLineChart('rsiChart', rsiLabels, [
+    { data:rsiData, borderColor:'#22d3ee', backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:.25 },
+    { data:rsiData.map(()=>70), borderColor:'rgba(255,51,85,.5)', backgroundColor:'transparent', borderWidth:1, pointRadius:0, borderDash:[6,6] },
+    { data:rsiData.map(()=>50), borderColor:'rgba(74,96,128,.8)', backgroundColor:'transparent', borderWidth:1, pointRadius:0, borderDash:[4,6] },
+    { data:rsiData.map(()=>30), borderColor:'rgba(0,232,122,.5)', backgroundColor:'transparent', borderWidth:1, pointRadius:0, borderDash:[6,6] }
+  ], { min:0, max:100 });
+
+  const domSeries = buildDominanceSeries(store.dom, 120);
+  renderLineChart('domChart', domSeries.map((_,i)=>i+1), [{
+    data:domSeries, borderColor:'#a78bfa', backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:.25
+  }], { min:35, max:70 });
 }
 async function init(){
   try{
     const raw = await fetchAll();
     store.dom = raw.dom;
-    store.BTC = processAsset('BTC', raw.btcT, raw.btcD, raw.btcW, raw.btcF, raw.dom);
-    store.ETH = processAsset('ETH', raw.ethT, raw.ethD, raw.ethW, raw.ethF, raw.dom);
+    const ethbtc = Number(raw.ethT.lastPrice) / Number(raw.btcT.lastPrice);
+    store.BTC = processAsset('BTC', raw.btcT, raw.btcD, raw.btcW, raw.btcF, raw.dom, ethbtc);
+    store.ETH = processAsset('ETH', raw.ethT, raw.ethD, raw.ethW, raw.ethF, raw.dom, ethbtc);
     document.getElementById('syncText').textContent = 'Ultimul sync: ' + new Date(raw.ts).toLocaleString('ro-RO') + ' · Binance + CoinGecko';
     renderHome();
+    if(!document.getElementById('assetView').classList.contains('hidden')) renderAsset(currentAsset);
   }catch(e){
     document.getElementById('syncText').textContent = 'Eroare la încărcarea datelor: ' + e.message;
     document.getElementById('marketState').textContent = 'EROARE';
