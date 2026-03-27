@@ -3,701 +3,352 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Crypto Dashboard V16</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>Crypto Dashboard V19 Plus</title>
 <style>
-:root{
-  --bg:#070b0f;--panel:#0c1118;--panel2:#101823;--border:#172030;--safe:#00e87a;--warn:#ffb300;--danger:#ff3355;
-  --neutral:#4a6080;--btc:#f7931a;--eth:#627eea;--text:#b8cde0;--white:#e8f0f8;--cyan:#22d3ee;--purple:#a78bfa;
-}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
-.wrap{max-width:1400px;margin:0 auto;padding:20px}
-.header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px}
-.logo{font-weight:700;letter-spacing:.12em;color:var(--safe)}
-.sync{font-size:12px;color:var(--neutral)}
-.card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--border);border-radius:16px;padding:18px}
-.hero{margin-bottom:16px}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-.kpi .label{font-size:12px;color:var(--neutral);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
-.kpi .value{font-size:24px;color:var(--white);font-weight:700}
-.asset-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
-.asset-title{display:flex;align-items:center;gap:10px}
-.coin{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700}
-.btc{background:rgba(247,147,26,.12);border:1px solid rgba(247,147,26,.35);color:var(--btc)}
-.eth{background:rgba(98,126,234,.12);border:1px solid rgba(98,126,234,.35);color:var(--eth)}
-.price{font-size:28px;font-weight:700;color:var(--white)}
-.chg{font-size:13px}
-.pos{color:var(--safe)} .neg{color:var(--danger)}
-.badge{padding:5px 10px;border-radius:999px;font-size:12px;border:1px solid}
-.badge.safe{color:var(--safe);border-color:rgba(0,232,122,.25);background:rgba(0,232,122,.06)}
-.badge.warn{color:var(--warn);border-color:rgba(255,179,0,.25);background:rgba(255,179,0,.06)}
-.badge.danger{color:var(--danger);border-color:rgba(255,51,85,.25);background:rgba(255,51,85,.06)}
-.muted{color:var(--neutral)}
-.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-.btn{padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:#101823;color:var(--white);cursor:pointer}
-.btn:hover{background:#132031}
-.btn.primary{border-color:rgba(0,232,122,.35);color:var(--safe)}
-.hidden{display:none!important}
-.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.tab{padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#101823;color:var(--text);cursor:pointer}
-.tab.active{color:var(--white);border-color:rgba(0,232,122,.35);background:rgba(0,232,122,.08)}
-.section-title{font-size:12px;color:var(--neutral);text-transform:uppercase;letter-spacing:.12em;margin-bottom:10px}
-.alerts{display:flex;flex-direction:column;gap:8px}
-.alert{padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.45}
-.alert.safe{background:rgba(0,232,122,.06);border:1px solid rgba(0,232,122,.18);color:var(--safe)}
-.alert.warn{background:rgba(255,179,0,.06);border:1px solid rgba(255,179,0,.18);color:var(--warn)}
-.alert.danger{background:rgba(255,51,85,.06);border:1px solid rgba(255,51,85,.18);color:var(--danger)}
-ul.clean{padding-left:18px;margin:0}
-ul.clean li{margin:6px 0}
-.chart-wrap{height:300px}
-.chart-wrap.small{height:240px}
-canvas{width:100%!important;height:100%!important}
-.hist-box{font-size:14px;line-height:1.75}
-.signal-box{padding:12px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.14)}
-.signal-box h4{margin:0 0 8px 0;color:var(--white)}
-.small-note{font-size:12px;color:var(--neutral);line-height:1.6;margin-top:8px}
-.progress{height:8px;background:#111a27;border-radius:999px;overflow:hidden;border:1px solid rgba(74,96,128,.25)}
-.progress > div{height:100%;border-radius:999px}
-.explain{font-size:14px;line-height:1.7}
-.callout{padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.15)}
-.callout-title{font-size:12px;color:var(--neutral);text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px}
-.state-box{padding:14px;border-radius:14px;border:1px solid var(--border);background:rgba(0,0,0,.14)}
-.state-title{font-size:12px;color:var(--neutral);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
-.state-big{font-size:24px;font-weight:700;color:var(--white);margin-bottom:6px}
-.level-list{display:flex;flex-direction:column;gap:8px}
-.level-row{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.12);border:1px solid var(--border);font-size:13px}
-.level-tag{font-weight:700}
-footer{margin-top:16px;color:var(--neutral);font-size:12px;line-height:1.7;text-align:center}
-@media (max-width:1000px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr}.header{flex-direction:column;align-items:flex-start}}
+body{margin:0;background:#0b0f14;color:#e6edf3;font-family:Arial}
+.wrap{max-width:1200px;margin:auto;padding:20px}
+.card{background:#111827;border:1px solid #1f2937;border-radius:12px;padding:16px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+h1,h2,h3{margin:0 0 10px 0}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;border:1px solid #334155}
+.safe{color:#10b981;background:rgba(16,185,129,.08)}
+.warn{color:#f59e0b;background:rgba(245,158,11,.08)}
+.danger{color:#ef4444;background:rgba(239,68,68,.08)}
+.small{font-size:12px;color:#94a3b8}
+pre{white-space:pre-wrap;font-family:Arial;line-height:1.6}
+textarea,select{width:100%;background:#0f172a;color:#e6edf3;border:1px solid #334155;border-radius:10px;padding:10px}
+button{background:#0f172a;color:#e6edf3;border:1px solid #334155;border-radius:10px;padding:10px 12px;cursor:pointer}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px;border-bottom:1px solid #334155;text-align:left;vertical-align:top}
+.hidden{display:none}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.tab.active{border-color:#10b981;color:#10b981}
+@media (max-width:900px){.grid,.grid2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="header">
-    <div>
-      <div class="logo">CRYPTO DASHBOARD <span class="muted">V16</span></div>
-      <div class="sync" id="syncText">Se încarcă...</div>
-    </div>
-    <div class="badge warn" id="marketState">ANALIZĂ ÎN CURS</div>
+  <h1>Crypto Dashboard V19 Plus</h1>
+  <div class="small" id="sync">Loading...</div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('dash',this)">Dashboard</button>
+    <button class="tab" onclick="showTab('journal',this)">Decision Journal</button>
   </div>
 
-  <div id="homeView">
-    <div class="card hero">
-      <div class="section-title">Home</div>
-      <div class="grid-4">
-        <div class="kpi"><div class="label">Regim piață</div><div class="value" id="homeRegime">--</div></div>
-        <div class="kpi"><div class="label">Risk BTC</div><div class="value" id="homeRiskBtc">--</div></div>
-        <div class="kpi"><div class="label">Risk ETH</div><div class="value" id="homeRiskEth">--</div></div>
-        <div class="kpi"><div class="label">ETH Relative</div><div class="value" id="homeEthRelative">--</div></div>
-      </div>
-      <div class="actions">
-        <button class="btn primary" onclick="openAsset('BTC')">Vezi BTC în detaliu</button>
-        <button class="btn primary" onclick="openAsset('ETH')">Vezi ETH în detaliu</button>
+  <div id="dash">
+    <div class="card">
+      <h3>Home</h3>
+      <div class="grid">
+        <div><div class="small">BTC Core</div><div id="btcCore">--</div></div>
+        <div><div class="small">ETH Core</div><div id="ethCore">--</div></div>
+        <div><div class="small">ETH Relative</div><div id="ethRel">--</div></div>
+        <div><div class="small">Regim</div><div id="regime">--</div></div>
       </div>
     </div>
 
-    <div class="grid-2">
+    <div class="grid2">
       <div class="card">
-        <div class="asset-head">
-          <div class="asset-title"><div class="coin btc">₿</div><div><div style="font-weight:700">BTC</div><div class="muted" style="font-size:12px">Summary</div></div></div>
-          <div class="badge" id="btcSummaryBadge">--</div>
-        </div>
-        <div class="price" id="btcPrice">--</div>
-        <div class="chg" id="btcChg">--</div>
-        <div style="margin-top:14px" id="btcSummaryText"></div>
+        <h3>BTC</h3>
+        <div id="btcBox"></div>
       </div>
-
       <div class="card">
-        <div class="asset-head">
-          <div class="asset-title"><div class="coin eth">Ξ</div><div><div style="font-weight:700">ETH</div><div class="muted" style="font-size:12px">Summary</div></div></div>
-          <div class="badge" id="ethSummaryBadge">--</div>
-        </div>
-        <div class="price" id="ethPrice">--</div>
-        <div class="chg" id="ethChg">--</div>
-        <div style="margin-top:14px" id="ethSummaryText"></div>
+        <h3>ETH</h3>
+        <div id="ethBox"></div>
       </div>
     </div>
 
-    <div class="card" style="margin-top:14px">
-      <div class="section-title">Alerts & Market comments</div>
-      <div class="alerts" id="alertsBox"></div>
-      <div style="margin-top:12px;font-size:14px;line-height:1.7" id="marketComment"></div>
-    </div>
-  </div>
-
-  <div id="assetView" class="hidden">
-    <div class="actions" style="margin-bottom:12px">
-      <button class="btn" onclick="goHome()">⬅ Înapoi la Home</button>
-    </div>
-
-    <div class="card" style="margin-bottom:14px">
-      <div class="asset-head">
-        <div class="asset-title"><div class="coin" id="detailCoin">₿</div><div><div style="font-weight:700" id="detailTitle">BTC</div><div class="muted" style="font-size:12px">Analiză completă</div></div></div>
-        <div class="badge" id="detailBadge">--</div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Decision Summary</h3>
+        <div id="summary"></div>
       </div>
-      <div class="grid-4">
-        <div class="kpi"><div class="label">Preț</div><div class="value" id="detailPrice">--</div></div>
-        <div class="kpi"><div class="label">BTC Core</div><div class="value" id="detailBtcCore">--</div></div>
-        <div class="kpi"><div class="label">ETH Core</div><div class="value" id="detailEthCore">--</div></div>
-        <div class="kpi"><div class="label">Action</div><div class="value" id="detailAction">--</div></div>
+      <div class="card">
+        <h3>Historical Tendency</h3>
+        <div id="history"></div>
       </div>
     </div>
 
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('macroTab', this)">Macro</button>
-      <button class="tab" onclick="switchTab('microTab', this)">Micro</button>
-      <button class="tab" onclick="switchTab('signalsTab', this)">Signals</button>
-      <button class="tab" onclick="switchTab('historyTab', this)">History</button>
-    </div>
-
-    <div id="macroTab" class="card">
-      <div class="section-title">Macro</div>
-      <div class="grid-4" style="margin-bottom:14px">
-        <div class="kpi"><div class="label">RSI Daily</div><div class="value" id="macroRsiD">--</div></div>
-        <div class="kpi"><div class="label">RSI Weekly</div><div class="value" id="macroRsiW">--</div></div>
-        <div class="kpi"><div class="label">MVRV proxy</div><div class="value" id="macroMvrv">--</div></div>
-        <div class="kpi"><div class="label">ETH/BTC ratio</div><div class="value" id="macroEthBtc">--</div></div>
-      </div>
-      <div class="grid-2">
-        <div><div class="section-title">Price chart</div><div class="chart-wrap"><canvas id="priceChart"></canvas></div></div>
-        <div><div class="section-title">MVRV chart</div><div class="chart-wrap"><canvas id="mvrvChart"></canvas></div></div>
-      </div>
-      <div style="margin-top:14px;font-size:14px;line-height:1.7" id="macroComment"></div>
-    </div>
-
-    <div id="microTab" class="card hidden">
-      <div class="section-title">Micro</div>
-      <div class="grid-4" style="margin-bottom:14px">
-        <div class="kpi"><div class="label">Funding</div><div class="value" id="microFunding">--</div></div>
-        <div class="kpi"><div class="label">Distance EMA200</div><div class="value" id="microDist">--</div></div>
-        <div class="kpi"><div class="label">Short-term bias</div><div class="value" id="microBias">--</div></div>
-        <div class="kpi"><div class="label">Pattern state</div><div class="value" id="microPattern">--</div></div>
-      </div>
-      <div class="grid-2">
-        <div><div class="section-title">RSI chart (30 / 50 / 70)</div><div class="chart-wrap"><canvas id="rsiChart"></canvas></div></div>
-        <div><div class="section-title">Funding chart</div><div class="chart-wrap"><canvas id="fundingChart"></canvas></div></div>
-      </div>
-      <div style="margin-top:14px;font-size:14px;line-height:1.7" id="microComment"></div>
-    </div>
-
-    <div id="signalsTab" class="card hidden">
-      <div class="section-title">Signals</div>
-      <div class="grid-4" style="margin-bottom:14px">
-        <div class="state-box">
-          <div class="state-title">BTC Core</div>
-          <div class="state-big" id="btcCoreState">--</div>
-          <div id="btcCoreText" class="explain"></div>
-        </div>
-        <div class="state-box">
-          <div class="state-title">ETH Core</div>
-          <div class="state-big" id="ethCoreState">--</div>
-          <div id="ethCoreText" class="explain"></div>
-        </div>
-        <div class="state-box">
-          <div class="state-title">ETH Relative</div>
-          <div class="state-big" id="ethRelState">--</div>
-          <div id="ethRelText" class="explain"></div>
-        </div>
-        <div class="state-box">
-          <div class="state-title">Likely Move</div>
-          <div class="state-big" id="moveState">--</div>
-          <div id="moveText" class="explain"></div>
-        </div>
-      </div>
-
-      <div class="grid-3" style="margin-bottom:14px">
-        <div class="signal-box">
-          <h4>ETH Relative Engine</h4>
-          <ul class="clean" id="relativeReasons"></ul>
-        </div>
-        <div class="signal-box">
-          <h4>Why bearish now</h4>
-          <ul class="clean" id="bearishWhy"></ul>
-        </div>
-        <div class="signal-box">
-          <h4>Why not bearish yet</h4>
-          <ul class="clean" id="notBearishYet"></ul>
-        </div>
-      </div>
-
-      <div class="grid-2" style="margin-bottom:14px">
-        <div class="signal-box">
-          <h4>What invalidates this</h4>
-          <ul class="clean" id="invalidateList"></ul>
-        </div>
-        <div class="signal-box">
-          <h4>Action map</h4>
-          <div id="signalsConclusion" class="hist-box"></div>
-        </div>
-      </div>
-
-      <div class="grid-4">
-        <div class="signal-box">
-          <h4>Hold</h4>
-          <div class="progress"><div id="holdBar" style="width:0%;background:var(--safe)"></div></div>
-          <div id="holdText" class="small-note"></div>
-        </div>
-        <div class="signal-box">
-          <h4>Take Partial Profit</h4>
-          <div class="progress"><div id="partialBar" style="width:0%;background:var(--warn)"></div></div>
-          <div id="partialText" class="small-note"></div>
-        </div>
-        <div class="signal-box">
-          <h4>Wait for Confirmation</h4>
-          <div class="progress"><div id="waitBar" style="width:0%;background:var(--cyan)"></div></div>
-          <div id="waitText" class="small-note"></div>
-        </div>
-        <div class="signal-box">
-          <h4>Re-accumulate</h4>
-          <div class="progress"><div id="reaccBar" style="width:0%;background:var(--purple)"></div></div>
-          <div id="reaccText" class="small-note"></div>
-        </div>
-      </div>
-    </div>
-
-    <div id="historyTab" class="card hidden">
-      <div class="section-title">History & context</div>
-      <div class="grid-2">
-        <div class="hist-box" id="historyText"></div>
-        <div>
-          <div class="section-title">Dominance chart</div>
-          <div class="chart-wrap small"><canvas id="domChart"></canvas></div>
-          <div class="small-note">Dominance e filtru. În V16 influențează în principal interpretarea ETH Relative, nu încă acțiunea.</div>
-          <div class="callout" style="margin-top:12px">
-            <div class="callout-title">Exemple istorice</div>
-            <div id="historyExamples" class="explain"></div>
-          </div>
-        </div>
-      </div>
+    <div class="card">
+      <h3>Mini Concluzie</h3>
+      <div id="mini"></div>
     </div>
   </div>
 
-  <footer>
-    V16 static HTML pentru GitHub Pages. Date live din Binance și CoinGecko. RSI este calculat local și afișat cu benzi 30/50/70.<br>
-    ETH Relative influențează doar alerts și interpretarea, nu încă scorul final sau action map.
-  </footer>
+  <div id="journal" class="hidden">
+    <div class="card">
+      <h3>Rules</h3>
+      <pre>DISCIPLINA: logurile nu se altereaza si nu se sterg.
+FLEXIBILITATEA: invatam si ne adaptam.
+THINK BEFORE ACT: patternurile genereaza recomandari, nu schimbari automate.</pre>
+    </div>
+
+    <div class="grid">
+      <div class="card"><div class="small">Logs total</div><div id="logTotal">0</div></div>
+      <div class="card"><div class="small">Correct</div><div id="logCorrect">0</div></div>
+      <div class="card"><div class="small">Partial</div><div id="logPartial">0</div></div>
+      <div class="card"><div class="small">Wrong</div><div id="logWrong">0</div></div>
+    </div>
+
+    <div class="card">
+      <h3>Daily Logs</h3>
+      <div id="tableBox"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>Manual Review</h3>
+        <div class="small">Snapshot-ul este locked. Review-ul este add-only.</div>
+        <div style="margin-top:10px"><select id="logSelect"></select></div>
+        <div style="margin-top:10px"><select id="external"><option value="no">External factor: No</option><option value="yes">External factor: Yes</option></select></div>
+        <div style="margin-top:10px"><textarea id="happened" placeholder="What happened"></textarea></div>
+        <div style="margin-top:10px"><textarea id="missed" placeholder="What we missed"></textarea></div>
+        <div style="margin-top:10px"><textarea id="lesson" placeholder="Lesson learned"></textarea></div>
+        <div style="margin-top:10px"><textarea id="recommendation" placeholder="Recommendation"></textarea></div>
+        <div style="margin-top:10px"><select id="recStatus">
+          <option value="no_change_suggested">No change suggested</option>
+          <option value="review_suggested">Review suggested</option>
+          <option value="strong_review_suggested">Strong review suggested</option>
+        </select></div>
+        <div style="margin-top:10px"><select id="decisionStatus">
+          <option value="not_reviewed">Not reviewed</option>
+          <option value="under_discussion">Under discussion</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select></div>
+        <div style="margin-top:10px"><button onclick="saveReview()">Save Manual Review</button></div>
+      </div>
+      <div class="card">
+        <h3>Selected Log</h3>
+        <div id="detailBox"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-let store = {};
-let currentAsset = 'BTC';
-let chartRefs = {};
+const KEY='crypto_decision_journal_v19_plus';
+let model={};
 
-function fmtUsd(v){ return '$' + Math.round(v).toLocaleString('en-US'); }
-function fmtPct(v){ return (v>=0?'+':'') + v.toFixed(2) + '%'; }
-function clsRisk(r){ return r >= 70 ? 'danger' : (r >= 45 ? 'warn' : 'safe'); }
-function labelRisk(r){ return r >= 70 ? 'RISK RIDICAT' : (r >= 45 ? 'ATENȚIE' : 'OK'); }
-
-function coreStateFromRisk(r){
-  return r >= 70 ? 'High Risk' : (r >= 45 ? 'Caution' : 'Healthy');
+function showTab(id,btn){
+  document.getElementById('dash').classList.toggle('hidden',id!=='dash');
+  document.getElementById('journal').classList.toggle('hidden',id!=='journal');
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  btn.classList.add('active');
 }
-function coreText(name, r){
-  if(r >= 70) return `${name} arată fragil și expus la continuarea presiunii.`;
-  if(r >= 45) return `${name} intră într-o zonă de atenție, dar fără breakdown complet obligatoriu.`;
-  return `${name} nu arată încă o deteriorare severă a structurii.`;
-}
-function switchTab(id, el){
-  ['macroTab','microTab','signalsTab','historyTab'].forEach(x => document.getElementById(x).classList.add('hidden'));
-  document.getElementById(id).classList.remove('hidden');
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-}
-function goHome(){
-  document.getElementById('assetView').classList.add('hidden');
-  document.getElementById('homeView').classList.remove('hidden');
-}
-function openAsset(asset){
-  currentAsset = asset;
-  document.getElementById('homeView').classList.add('hidden');
-  document.getElementById('assetView').classList.remove('hidden');
-  renderAsset(asset);
-}
-async function fetchJSON(url){
-  const r = await fetch(url);
-  if(!r.ok) throw new Error(url + ' -> ' + r.status);
-  return await r.json();
-}
-async function fetchAll(){
-  const [btcT, ethT, btcD, ethD, btcW, ethW, btcF, ethF, dom] = await Promise.all([
-    fetchJSON('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT'),
-    fetchJSON('https://api.binance.com/api/v3/ticker/24hr?symbol=ETHUSDT'),
-    fetchJSON('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=220'),
-    fetchJSON('https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1d&limit=220'),
-    fetchJSON('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1w&limit=80'),
-    fetchJSON('https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1w&limit=80'),
-    fetchJSON('https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT'),
-    fetchJSON('https://fapi.binance.com/fapi/v1/premiumIndex?symbol=ETHUSDT'),
-    fetchJSON('https://api.coingecko.com/api/v3/global')
-  ]);
-  return { btcT, ethT, btcD, ethD, btcW, ethW, btcF, ethF, dom: dom.data.market_cap_percentage.btc, ts: Date.now() };
-}
-function closes(raw){ return raw.map(x => Number(x[4])); }
-function calcEMA(cl, period){
-  const k = 2 / (period + 1);
-  let ema = cl[0];
-  for(let i=1;i<cl.length;i++) ema = cl[i] * k + ema * (1-k);
-  return ema;
-}
-function calcRSISeries(closes, period=14){
-  if(closes.length < period + 1) return [];
-  let gains = 0, losses = 0;
-  for(let i=1;i<=period;i++){
-    const d = closes[i] - closes[i-1];
-    if(d >= 0) gains += d; else losses -= d;
-  }
-  let avgGain = gains / period;
-  let avgLoss = losses / period;
-  let out = [];
-  let rs = avgLoss === 0 ? Infinity : avgGain / avgLoss;
-  out.push(100 - (100 / (1 + rs)));
-  for(let i=period+1;i<closes.length;i++){
-    const d = closes[i] - closes[i-1];
-    const gain = d > 0 ? d : 0;
-    const loss = d < 0 ? -d : 0;
-    avgGain = ((avgGain * (period - 1)) + gain) / period;
-    avgLoss = ((avgLoss * (period - 1)) + loss) / period;
-    rs = avgLoss === 0 ? Infinity : avgGain / avgLoss;
-    out.push(100 - (100 / (1 + rs)));
-  }
+function loadLogs(){try{return JSON.parse(localStorage.getItem(KEY))||[]}catch{return[]}}
+function saveLogs(v){localStorage.setItem(KEY,JSON.stringify(v))}
+function core(r){return r>=70?'High Risk':r>=45?'Caution':'Healthy'}
+function classify(p){return p<=-3?['bearish_continuation',p<=-7?'strong':'moderate']:p>=3?['bullish_rebound',p>=7?'strong':'moderate']:['neutral_range','weak']}
+function badgeCls(state){return state==='High Risk'?'danger':state==='Caution'?'warn':'safe'}
+function closes(raw){return raw.map(x=>Number(x[4]))}
+function rsiSeries(arr,p=14){
+  if(arr.length<p+1)return [];
+  let g=0,l=0; for(let i=1;i<=p;i++){let d=arr[i]-arr[i-1]; if(d>=0)g+=d; else l-=d}
+  let ag=g/p, al=l/p, out=[];
+  let rs=al===0?999:ag/al; out.push(100-(100/(1+rs)));
+  for(let i=p+1;i<arr.length;i++){let d=arr[i]-arr[i-1], gg=d>0?d:0, ll=d<0?-d:0; ag=((ag*(p-1))+gg)/p; al=((al*(p-1))+ll)/p; rs=al===0?999:ag/al; out.push(100-(100/(1+rs))); }
   return out;
 }
-function makeMvrvProxy(cl){
-  const avg = cl.reduce((a,b)=>a+b,0) / cl.length;
-  return cl.map(v => v / avg);
+function ema(arr,p){let k=2/(p+1), e=arr[0]; for(let i=1;i<arr.length;i++)e=arr[i]*k+e*(1-k); return e}
+function mvrvProxy(arr){let avg=arr.reduce((a,b)=>a+b,0)/arr.length; return arr[arr.length-1]/avg}
+function riskFrom(rawClose, rawWeek, funding, dominance, symbol){
+  const d=closes(rawClose), w=closes(rawWeek), rsiD=rsiSeries(d).at(-1)||50, rsiW=rsiSeries(w).at(-1)||50;
+  const price=d.at(-1), ema200=ema(d.slice(-200),200), dist=((price-ema200)/ema200)*100, mvrv=mvrvProxy(d);
+  let risk=0;
+  if(rsiW>70)risk+=25; else if(rsiW>60)risk+=12;
+  if(dist>25)risk+=25; else if(dist>15)risk+=12;
+  if(funding>0.01)risk+=12; else if(funding<-0.01)risk-=5;
+  if(mvrv>2.6)risk+=18; else if(mvrv>2.0)risk+=8;
+  if(rsiD<50)risk+=8;
+  if(dominance>55&&symbol==='BTC')risk+=5;
+  risk=Math.max(0,Math.min(100,Math.round(risk)));
+  const shortBias = (rsiD<45||dist<0)?'Bearish':(rsiD>55&&dist>0?'Bullish':'Neutral');
+  return {risk, core:core(risk), rsiD, rsiW, dist, mvrv, shortBias, price, closes:d};
 }
-function buildDominanceSeries(current, len=120){
-  const arr = [];
-  for(let i=0;i<len;i++){
-    const drift = Math.sin(i/10) * 1.3 + Math.cos(i/18) * 0.8 + (i>90?0.4:0);
-    arr.push(Math.max(35, Math.min(70, current + drift)));
+function decision(btc,eth,rel){
+  let setup='Neutral / Consolidation', verdict='⚪ Neutral', action='Wait', hist='Piata este mixta si edge-ul directional este redus.';
+  if(btc.core==='Caution'&&(eth.core!=='Healthy'||rel.state==='Weakness')){
+    setup='Early Weakness'; verdict='⚠️ Early Warning — not confirmed'; action='Wait / pregatire pentru reducere';
+    hist='Istoric, astfel de configuratii apar inaintea unor miscari bearish, dar continuarea depinde de confirmare.';
   }
-  return arr;
-}
-function buildFundingSeries(current, len=120){
-  const arr = [];
-  for(let i=0;i<len;i++){
-    const drift = Math.sin(i/9) * 0.004 + Math.cos(i/15) * 0.002;
-    arr.push(current + drift);
+  if((btc.core==='High Risk'||eth.core==='High Risk')&&rel.state==='Weakness'){
+    setup='Confirmed Breakdown'; verdict='🔴 Confirmed Bearish'; action='Reduce / sell defensiv';
+    hist='Istoric, aceste configuratii duc frecvent la continuari bearish pe termen scurt si mediu.';
   }
-  return arr;
-}
-function detectSignalState({shortBias, risk, rsiD, rsiW, dist}){
-  if(shortBias === 'Bearish' && risk >= 70) return 'Bearish continuation';
-  if(shortBias === 'Bearish' && risk >= 45) return 'Distribution / early breakdown';
-  if(shortBias === 'Bullish' && rsiD > 55 && rsiW < 55 && dist < 10) return 'Bullish reversal attempt';
-  if(shortBias === 'Bullish' && risk >= 45) return 'Dead cat bounce risk';
-  return 'Neutral / mixed';
-}
-function actionScores({risk, shortBias, patternState, rsiW, dist}){
-  let hold = Math.max(0, 100 - risk);
-  let partial = risk;
-  let wait = 40;
-  let reacc = 20;
-  if(patternState === 'Bullish reversal attempt'){ wait = 65; reacc = 55; }
-  if(patternState === 'Neutral / mixed'){ wait = 70; }
-  if(shortBias === 'Bearish' && risk >= 45){ wait = 35; reacc = 15; }
-  if(rsiW > 70 || dist > 25) partial = Math.min(100, partial + 10);
-  if(risk < 35 && shortBias === 'Bullish'){ hold = Math.min(100, hold + 15); }
-  return { hold: Math.round(hold), partial: Math.round(partial), wait: Math.round(wait), reacc: Math.round(reacc) };
-}
-function buildEthRelativeScore({ethbtc, dominance, rsiEth, rsiBtc, ethCore, btcCore, ethChg, btcChg}){
-  let score = 50;
-  const reasons = [];
-  if(ethbtc < 0.05) { score -= 15; reasons.push('ETH/BTC este slab'); }
-  if(dominance > 55) { score -= 15; reasons.push('BTC dominance ridicat'); }
-  if(rsiEth < rsiBtc) { score -= 10; reasons.push('RSI ETH sub RSI BTC'); }
-  if(ethChg < btcChg) { score -= 10; reasons.push('ETH underperforms BTC pe sesiunea curentă'); }
-
-  if(ethbtc > 0.055) { score += 15; reasons.push('ETH/BTC arată forță'); }
-  if(dominance < 53) { score += 10; reasons.push('BTC dominance se relaxează'); }
-  if(rsiEth > rsiBtc) { score += 10; reasons.push('RSI ETH peste RSI BTC'); }
-  if(ethChg > btcChg) { score += 10; reasons.push('ETH outperforms BTC pe sesiunea curentă'); }
-
-  let state = 'Neutral';
-  let text = 'ETH relative behavior is not adding meaningful directional information right now.';
-  if(score <= 35 && (btcCore !== 'Healthy' || ethCore !== 'Healthy')){
-    state = 'Weakness';
-    text = 'ETH is underperforming BTC in a risk-off context. This may act as an early warning, but it is not a standalone sell signal.';
-  } else if(score >= 65 && btcCore !== 'High Risk'){
-    state = 'Strength';
-    text = 'ETH is outperforming BTC, suggesting risk-on rotation. This reduces bearish confidence, but does not invalidate macro risk by itself.';
-  } else if(score <= 35){
-    state = 'Weakness';
-    text = 'ETH is weaker than BTC, but the broader context is not bearish enough to treat this as a decisive signal.';
+  if(rel.state==='Strength'&&btc.core!=='High Risk'){
+    setup='Risk-On Rotation'; verdict='🟢 Risk-On Rotation'; action='Hold / nu vinzi agresiv';
+    hist='Istoric, acest comportament apare in faze in care capitalul se muta catre active mai riscante.';
   }
-  if(!reasons.length) reasons.push('Nu există deviații relative importante între ETH și BTC.');
-  return {score, state, text, reasons};
+  return {setup, verdict, action, hist};
 }
-function processAsset(symbol, ticker, dailyRaw, weeklyRaw, fundingRaw, dominance, ethbtc, btcRef){
-  const dCl = closes(dailyRaw);
-  const wCl = closes(weeklyRaw);
-  const price = Number(ticker.lastPrice);
-  const chg = Number(ticker.priceChangePercent);
-  const ema200 = calcEMA(dCl.slice(-200), 200);
-  const dist = ((price - ema200) / ema200) * 100;
-  const rsiDSeries = calcRSISeries(dCl, 14);
-  const rsiWSeries = calcRSISeries(wCl, 14);
-  const rsiD = rsiDSeries.at(-1) ?? 50;
-  const rsiW = rsiWSeries.at(-1) ?? 50;
-  const rsiDPrev = rsiDSeries.at(-2) ?? rsiD;
-  const funding = Number(fundingRaw.lastFundingRate) * 100;
-  const mvrvSeries = makeMvrvProxy(dCl);
-  const mvrv = mvrvSeries.at(-1);
-
-  let risk = 0;
-  if(rsiW > 70) risk += 25; else if(rsiW > 60) risk += 12;
-  if(dist > 25) risk += 25; else if(dist > 15) risk += 12;
-  if(funding > 0.01) risk += 12; else if(funding < -0.01) risk -= 5;
-  if(mvrv > 2.6) risk += 18; else if(mvrv > 2.0) risk += 8;
-  if(rsiD < rsiDPrev) risk += 8;
-  if(dominance > 55 && symbol === 'BTC') risk += 5;
-  risk = Math.max(0, Math.min(100, Math.round(risk)));
-
-  let phase = 'Early / Mid';
-  if(mvrv > 2.6 || dist > 25 || rsiW > 70) phase = 'Late Cycle';
-  if(rsiW < 50 && dist < 0) phase = 'Early Bear Risk';
-  if(rsiD < 45 && rsiW < 50 && dist < 0) phase = 'Bearish';
-
-  const shortBias = (rsiD < 45 || dist < 0) ? 'Bearish' : (rsiD > 55 && dist > 0 ? 'Bullish' : 'Neutral');
-  const mvrvZone = mvrv > 3 ? 'TOP ZONE 🔴' : (mvrv < 1 ? 'ACCUMULATION 🟢' : 'NEUTRAL 🟡');
-  const patternState = detectSignalState({shortBias, risk, rsiD, rsiW, dist});
-  const core = coreStateFromRisk(risk);
-
-  let exec = 'Hold / wait';
-  if(risk >= 70) exec = 'Take partial profit / reduce exposure';
-  else if(risk >= 45) exec = 'Atenție — distribuție posibilă';
-  else if(shortBias === 'Bullish') exec = 'Hold / constructive';
-
-  const bearishWhy = [];
-  if(shortBias === 'Bearish') bearishWhy.push('Bias-ul pe termen scurt este bearish.');
-  if(rsiD < 50) bearishWhy.push('RSI daily a pierdut zona neutră de 50.');
-  if(funding > 0.01) bearishWhy.push('Funding-ul rămâne pozitiv și expune piața la unwind.');
-  if(dist > 15) bearishWhy.push('Prețul rămâne încă deasupra mediei lungi, deci există spațiu de corecție.');
-  if(patternState.includes('breakdown') || patternState.includes('continuation')) bearishWhy.push('Structura seamănă cu breakdown / continuation.');
-  if(!bearishWhy.length) bearishWhy.push('Nu există suficiente motive bearish puternice.');
-
-  const notBearishYet = [];
-  if(rsiW > 50) notBearishYet.push('RSI weekly nu e complet distrus.');
-  if(dist > 0) notBearishYet.push('Prețul nu a pierdut EMA200.');
-  if(patternState === 'Bullish reversal attempt' || shortBias === 'Bullish') notBearishYet.push('Există o tentativă de stabilizare / rebound.');
-  if(mvrv < 2.6) notBearishYet.push('MVRV proxy nu este în zona extremă maximă.');
-  if(!notBearishYet.length) notBearishYet.push('Argumentele de apărare sunt slabe.');
-
-  const invalidateList = [];
-  invalidateList.push('RSI daily revine și se stabilizează peste 50.');
-  invalidateList.push('Prețul recuperează și menține structura fără breakdown nou.');
-  invalidateList.push('Funding-ul se răcește fără alt selloff major.');
-  if(symbol === 'ETH') invalidateList.push('ETH/BTC începe să arate mai bine și rotația capitalului se îmbunătățește.');
-
-  const macroComment =
-    `Pe ${symbol}, partea macro arată <strong>${phase}</strong>. RSI weekly este <strong>${rsiW.toFixed(1)}</strong>, MVRV proxy <strong>${mvrv.toFixed(2)}</strong> (${mvrvZone}), iar deviația față de EMA200 este <strong>${fmtPct(dist)}</strong>. ` +
-    (risk >= 70
-      ? `Confluența actuală seamănă cu zonele în care istoric apărea distribuția și merita apărat profitul.`
-      : risk >= 45
-        ? `Contextul macro nu este încă un bear market complet confirmat în mod absolut, dar riscul crește și raportul risc/recompensă se deteriorează.`
-        : `Nu există deocamdată o supraîncălzire macro severă.`);
-
-  const microComment =
-    `Pe termen scurt, bias-ul este <strong>${shortBias}</strong>, iar pattern state-ul este <strong>${patternState}</strong>. RSI daily este <strong>${rsiD.toFixed(1)}</strong>, iar funding-ul este <strong>${fmtPct(funding)}</strong>. ` +
-    (shortBias === 'Bearish'
-      ? `Asta confirmă ideea de avertisment timpuriu înainte de confirmarea completă pe macro.`
-      : shortBias === 'Bullish'
-        ? `Momentum-ul scurt este încă constructiv, însă trebuie citit în contextul macro.`
-        : `Semnalele scurte sunt mixte.`);
-
-  const hist = `
-    <p><strong>MVRV:</strong> zona verde este asociată istoric cu acumulare după capitulare, iar zona roșie cu evaluare excesivă și topuri macro. Aici folosim un proxy bazat pe preț față de media extinsă, nu valoarea on-chain oficială.</p>
-    <p><strong>RSI weekly:</strong> peste 70 semnalează supraîncălzire. Nu înseamnă top exact, ci faptul că riscul începe să crească.</p>
-    <p><strong>ETH Relative:</strong> în V16, acest motor este un filtru de interpretare. El nu schimbă încă scorul final, dar te ajută să înțelegi dacă ETH dă un avertisment relativ față de BTC sau dacă, dimpotrivă, apare o rotație risk-on.</p>
-  `;
-
-  const historyExamples = symbol === 'BTC'
-    ? `• Când BTC rămâne stabil dar ETH începe să slăbească relativ, uneori acolo apare primul avertisment de risk-off.<br>• Când ETH outperformă BTC în timp ce dominance scade, piața poate intra într-o fază mai agresivă de risk-on.`
-    : `• ETH tinde să fie mai volatil decât BTC, deci underperformance simplă nu e suficientă. De aceea o filtrăm prin ETH/BTC, dominance și RSI relativ.<br>• Outperformance-ul ETH contează pozitiv doar dacă vine într-un context credibil de rotație, nu într-un bounce fără confirmare.`;
-
-  return {
-    symbol, price, chg, funding, dominance, dist, rsiD, rsiW, rsiDSeries, mvrv, mvrvSeries,
-    phase, shortBias, risk, mvrvZone, exec, macroComment, microComment, dCl, ethbtc, patternState,
-    actions: actionScores({risk, shortBias, patternState, rsiW, dist}), historyExamples,
-    bearishWhy, notBearishYet, invalidateList, hist, core
-  };
+function relativeState(ethbtc,dom,rsiEth,rsiBtc,ethChg,btcChg,btcCore,ethCore){
+  let score=50, reasons=[];
+  if(ethbtc<0.05){score-=15; reasons.push('ETH/BTC este slab')}
+  if(dom>55){score-=15; reasons.push('BTC dominance ridicat')}
+  if(rsiEth<rsiBtc){score-=10; reasons.push('RSI ETH sub RSI BTC')}
+  if(ethChg<btcChg){score-=10; reasons.push('ETH underperforms BTC')}
+  if(ethbtc>0.055){score+=15; reasons.push('ETH/BTC arata forta')}
+  if(dom<53){score+=10; reasons.push('BTC dominance se relaxeaza')}
+  if(rsiEth>rsiBtc){score+=10; reasons.push('RSI ETH peste RSI BTC')}
+  if(ethChg>btcChg){score+=10; reasons.push('ETH outperforms BTC')}
+  let state='Neutral', text='ETH relative behavior is not adding meaningful directional information right now.';
+  if(score<=35&&(btcCore!=='Healthy'||ethCore!=='Healthy')){state='Weakness'; text='ETH underperforms BTC intr-un context de atentie. Early warning, nu sell signal standalone.'}
+  else if(score>=65&&btcCore!=='High Risk'){state='Strength'; text='ETH outperforma BTC si sugereaza risk-on rotation. Scade increderea intr-un bearish imediat.'}
+  else if(score<=35){state='Weakness'; text='ETH este mai slab decat BTC, dar contextul general nu e suficient pentru concluzii dure.'}
+  if(!reasons.length)reasons.push('Nu exista deviatii relative importante intre ETH si BTC.')
+  return {score,state,text,reasons}
 }
-function setBadge(el, text, cls){
-  const n = document.getElementById(el);
-  n.className = 'badge ' + cls;
-  n.textContent = text;
+function lastClosedKey(){
+  const now=new Date();
+  const d=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()-1));
+  return d.toISOString().slice(0,10);
 }
-function destroyIf(name){
-  if(chartRefs[name]) { chartRefs[name].destroy(); delete chartRefs[name]; }
-}
-function renderLineChart(id, labels, datasets, yOptions={}){
-  destroyIf(id);
-  chartRefs[id] = new Chart(document.getElementById(id), {
-    type:'line',
-    data:{ labels, datasets },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      plugins:{ legend:{ display:false } },
-      interaction:{ mode:'index', intersect:false },
-      scales:{
-        x:{ display:false, grid:{ color:'rgba(74,96,128,.08)' }, ticks:{ color:'#4a6080' } },
-        y:{ ticks:{ color:'#4a6080' }, grid:{ color:'rgba(74,96,128,.15)' }, ...yOptions }
-      }
+function autoSync(){
+  let logs=loadLogs();
+  const key=lastClosedKey();
+  if(logs.some(x=>x.id===`daily-${key}`)) return logs;
+
+  const btcClosed=model.raw.btcD.at(-2), btcNext=model.raw.btcD.at(-1);
+  const ethClosed=model.raw.ethD.at(-2), ethNext=model.raw.ethD.at(-1);
+  const btcPct=((Number(btcNext[4])-Number(btcClosed[4]))/Number(btcClosed[4]))*100;
+  const ethPct=((Number(ethNext[4])-Number(ethClosed[4]))/Number(ethClosed[4]))*100;
+  const marketPct=(btcPct+ethPct)/2;
+  const [dir,strength]=classify(marketPct);
+  const autoResult = model.dec.action.toLowerCase().includes('reduce')||model.dec.action.toLowerCase().includes('sell')
+    ? (dir==='bearish_continuation'?'correct':dir==='neutral_range'?'partially_correct':'wrong')
+    : (dir==='neutral_range'?'correct':dir==='bullish_rebound'?'partially_correct':'wrong');
+
+  const log={
+    id:`daily-${key}`,
+    snapshot:{
+      locked:true, day_key:key, created_at:new Date().toISOString(), timeframe:'daily',
+      btc_core:model.btc.core, eth_core:model.eth.core, eth_relative:model.rel.state,
+      setup_type:model.dec.setup, verdict_short:model.dec.verdict, action_plan:model.dec.action,
+      confidence:model.btc.core==='High Risk'||model.eth.core==='High Risk'?'High':model.btc.core==='Caution'||model.eth.core==='Caution'?'Medium':'Low',
+      rationale_factors:[
+        `BTC RSI daily ${model.btc.rsiD.toFixed(1)}`,
+        `ETH RSI daily ${model.eth.rsiD.toFixed(1)}`,
+        `ETH Relative ${model.rel.state}`,
+        `BTC dominance ${model.raw.dom.toFixed(1)}%`
+      ]
+    },
+    outcome:{
+      btc_pct_change_to_close:Number(btcPct.toFixed(2)),
+      eth_pct_change_to_close:Number(ethPct.toFixed(2)),
+      market_pct_change_to_close:Number(marketPct.toFixed(2)),
+      outcome_direction:dir, outcome_strength:strength,
+      external_factor_yes_no:false, external_factor_note:''
+    },
+    evaluation:{
+      auto_result:autoResult,
+      action_quality:autoResult==='correct'?'good':autoResult==='partially_correct'?'neutral':'bad',
+      time_to_confirmation_hours:dir==='bearish_continuation'?24:null,
+      drawdown_avoided_pct:dir==='bearish_continuation'&&model.dec.action.toLowerCase().includes('reduce')?Math.abs(marketPct).toFixed(2):'0.00',
+      what_happened:'', what_we_missed:'', lesson_learned:''
+    },
+    recommendation:{
+      recommendation_status:'no_change_suggested',
+      recommendation_text:'',
+      change_decision:'not_reviewed'
     }
-  });
+  };
+  logs.unshift(log); saveLogs(logs); return logs;
 }
-function renderHome(){
-  const btc = store.BTC, eth = store.ETH, rel = store.ethRelative;
-  document.getElementById('btcPrice').textContent = fmtUsd(btc.price);
-  document.getElementById('ethPrice').textContent = fmtUsd(eth.price);
-  document.getElementById('btcChg').textContent = fmtPct(btc.chg); document.getElementById('btcChg').className = 'chg ' + (btc.chg>=0?'pos':'neg');
-  document.getElementById('ethChg').textContent = fmtPct(eth.chg); document.getElementById('ethChg').className = 'chg ' + (eth.chg>=0?'pos':'neg');
-  setBadge('btcSummaryBadge', labelRisk(btc.risk), clsRisk(btc.risk));
-  setBadge('ethSummaryBadge', labelRisk(eth.risk), clsRisk(eth.risk));
-  document.getElementById('btcSummaryText').innerHTML = `BTC Core: <strong>${btc.core}</strong><br>Short-term: <strong>${btc.shortBias}</strong><br>Action: <strong>${btc.exec}</strong>`;
-  document.getElementById('ethSummaryText').innerHTML = `ETH Core: <strong>${eth.core}</strong><br>Short-term: <strong>${eth.shortBias}</strong><br>Action: <strong>${eth.exec}</strong>`;
-  document.getElementById('homeRiskBtc').textContent = btc.risk + '/100';
-  document.getElementById('homeRiskEth').textContent = eth.risk + '/100';
-  document.getElementById('homeEthRelative').textContent = rel.state;
+function render(){
+  document.getElementById('sync').textContent='Ultimul sync: '+new Date().toLocaleString('ro-RO')+' · Binance + localStorage journal';
+  document.getElementById('btcCore').textContent=model.btc.core;
+  document.getElementById('ethCore').textContent=model.eth.core;
+  document.getElementById('ethRel').textContent=model.rel.state;
+  document.getElementById('regime').textContent=model.rel.state==='Strength'?'Risk-on rotation':model.rel.state==='Weakness'?'Short-term caution':model.btc.core==='High Risk'||model.eth.core==='High Risk'?'Distribution / Risk-off':'Mixed';
+  document.getElementById('btcBox').innerHTML=`<span class="badge ${badgeCls(model.btc.core)}">${model.btc.core}</span><br><br><strong>${fmtUsd(model.btc.price)}</strong> <span class="${model.raw.btcT.priceChangePercent>=0?'pos':'neg'}">${fmtPct(Number(model.raw.btcT.priceChangePercent))}</span><br>RSI daily: ${model.btc.rsiD.toFixed(1)}<br>Funding: ${fmtPct(model.btc.funding)}<br>Bias: ${model.btc.shortBias}`;
+  document.getElementById('ethBox').innerHTML=`<span class="badge ${badgeCls(model.eth.core)}">${model.eth.core}</span><br><br><strong>${fmtUsd(model.eth.price)}</strong> <span class="${model.raw.ethT.priceChangePercent>=0?'pos':'neg'}">${fmtPct(Number(model.raw.ethT.priceChangePercent))}</span><br>RSI daily: ${model.eth.rsiD.toFixed(1)}<br>Funding: ${fmtPct(model.eth.funding)}<br>Bias: ${model.eth.shortBias}`;
+  document.getElementById('summary').innerHTML=`<strong>${model.dec.verdict}</strong><br><br>Action: ${model.dec.action}<br>Setup: ${model.dec.setup}`;
+  document.getElementById('history').innerHTML=model.dec.hist;
+  document.getElementById('mini').innerHTML=`Verdict scurt: <strong>${model.dec.verdict}</strong><br>Actiune: <strong>${model.dec.action}</strong><br><br>Detalii:<br>• BTC Core = ${model.btc.core}<br>• ETH Core = ${model.eth.core}<br>• ETH Relative = ${model.rel.state}<br>• RSI BTC / ETH = ${model.btc.rsiD.toFixed(1)} / ${model.eth.rsiD.toFixed(1)}<br><br>Mini concluzie:<br>${model.rel.text}`;
 
-  let regime = 'Mixed';
-  if(btc.risk >= 70 || eth.risk >= 70) regime = 'Distribution / Risk-off';
-  else if(rel.state === 'Strength') regime = 'Risk-on rotation';
-  else if(rel.state === 'Weakness') regime = 'Short-term caution';
-  else if(btc.shortBias === 'Bullish' && eth.shortBias === 'Bullish') regime = 'Constructive';
-  document.getElementById('homeRegime').textContent = regime;
-  setBadge('marketState', regime.toUpperCase(), regime.includes('Risk') || regime.includes('caution') ? 'danger' : (regime.includes('rotation')?'warn':'safe'));
+  const logs=loadLogs();
+  document.getElementById('logTotal').textContent=logs.length;
+  document.getElementById('logCorrect').textContent=logs.filter(x=>x.evaluation.auto_result==='correct').length;
+  document.getElementById('logPartial').textContent=logs.filter(x=>x.evaluation.auto_result==='partially_correct').length;
+  document.getElementById('logWrong').textContent=logs.filter(x=>x.evaluation.auto_result==='wrong').length;
 
-  const alerts = [];
-  if(rel.state === 'Weakness') alerts.push(['warn', 'ETH Relative: Weakness — ETH underperforms BTC într-un context care poate sugera avertisment timpuriu, dar nu este singur un sell signal.']);
-  if(rel.state === 'Strength') alerts.push(['safe', 'ETH Relative: Strength — ETH outperformă BTC și sugerează rotație risk-on. Scade încrederea într-un bearish imediat.']);
-  if(btc.core === 'High Risk') alerts.push(['danger', 'BTC Core: High Risk — contextul mare cere protejarea profitului.']);
-  if(eth.core === 'High Risk') alerts.push(['danger', 'ETH Core: High Risk — ETH este fragil în sine, indiferent de relația cu BTC.']);
-  if(!alerts.length) alerts.push(['safe', 'ETH Relative este neutru și nu adaugă informație direcțională importantă acum.']);
+  document.getElementById('tableBox').innerHTML = `<table><thead><tr><th>Date</th><th>Setup</th><th>Verdict</th><th>Action</th><th>Outcome</th><th>Eval</th></tr></thead><tbody>${
+    logs.map(x=>`<tr onclick="pick('${x.id}')" style="cursor:pointer"><td>${x.snapshot.day_key}</td><td>${x.snapshot.setup_type}</td><td>${x.snapshot.verdict_short}</td><td>${x.snapshot.action_plan}</td><td>${x.outcome.outcome_direction}</td><td>${x.evaluation.auto_result}</td></tr>`).join('') || '<tr><td colspan="6">No logs yet</td></tr>'
+  }</tbody></table>`;
 
-  document.getElementById('alertsBox').innerHTML = alerts.map(a => `<div class="alert ${a[0]}">${a[1]}</div>`).join('');
-  document.getElementById('marketComment').innerHTML =
-    `V16 adaugă <strong>ETH Relative Engine</strong> ca filtru de interpretare. 
-     El nu schimbă încă scorurile sau acțiunile, dar îți arată dacă ETH dă un avertisment relativ față de BTC sau dacă apare o rotație pozitivă către risc.`;
+  const sel=document.getElementById('logSelect');
+  sel.innerHTML=logs.map(x=>`<option value="${x.id}">${x.snapshot.day_key} · ${x.snapshot.setup_type}</option>`).join('');
+  if(logs.length) pick(sel.value);
 }
-function renderAsset(asset){
-  const d = store[asset];
-  const rel = store.ethRelative;
-  document.getElementById('detailTitle').textContent = asset;
-  const coin = document.getElementById('detailCoin');
-  coin.textContent = asset === 'BTC' ? '₿' : 'Ξ';
-  coin.className = 'coin ' + (asset === 'BTC' ? 'btc' : 'eth');
-  setBadge('detailBadge', labelRisk(d.risk), clsRisk(d.risk));
-  document.getElementById('detailPrice').textContent = fmtUsd(d.price);
-  document.getElementById('detailBtcCore').textContent = store.BTC.core;
-  document.getElementById('detailEthCore').textContent = store.ETH.core;
-  document.getElementById('detailAction').textContent = d.exec;
+function pick(id){
+  const logs=loadLogs(), x=logs.find(z=>z.id===id); if(!x)return;
+  document.getElementById('logSelect').value=id;
+  document.getElementById('external').value=x.outcome.external_factor_yes_no?'yes':'no';
+  document.getElementById('happened').value=x.evaluation.what_happened||'';
+  document.getElementById('missed').value=x.evaluation.what_we_missed||'';
+  document.getElementById('lesson').value=x.evaluation.lesson_learned||'';
+  document.getElementById('recommendation').value=x.recommendation.recommendation_text||'';
+  document.getElementById('recStatus').value=x.recommendation.recommendation_status||'no_change_suggested';
+  document.getElementById('decisionStatus').value=x.recommendation.change_decision||'not_reviewed';
+  document.getElementById('detailBox').innerHTML=`<pre>Date: ${x.snapshot.day_key}
+Snapshot LOCKED
+BTC Core: ${x.snapshot.btc_core}
+ETH Core: ${x.snapshot.eth_core}
+ETH Relative: ${x.snapshot.eth_relative}
+Setup: ${x.snapshot.setup_type}
+Verdict: ${x.snapshot.verdict_short}
+Action: ${x.snapshot.action_plan}
+Confidence: ${x.snapshot.confidence}
 
-  document.getElementById('macroRsiD').textContent = d.rsiD.toFixed(1);
-  document.getElementById('macroRsiW').textContent = d.rsiW.toFixed(1);
-  document.getElementById('macroMvrv').textContent = d.mvrv.toFixed(2) + ' · ' + d.mvrvZone;
-  document.getElementById('macroEthBtc').textContent = d.ethbtc.toFixed(4);
-  document.getElementById('macroComment').innerHTML = d.macroComment;
+Outcome AUTO
+BTC close Δ: ${fmtPct(x.outcome.btc_pct_change_to_close)}
+ETH close Δ: ${fmtPct(x.outcome.eth_pct_change_to_close)}
+Market close Δ: ${fmtPct(x.outcome.market_pct_change_to_close)}
+Outcome: ${x.outcome.outcome_direction} / ${x.outcome.outcome_strength}
+Auto eval: ${x.evaluation.auto_result}
+Action quality: ${x.evaluation.action_quality}
+Drawdown avoided: ${x.evaluation.drawdown_avoided_pct}%
 
-  document.getElementById('microFunding').textContent = fmtPct(d.funding);
-  document.getElementById('microDist').textContent = fmtPct(d.dist);
-  document.getElementById('microBias').textContent = d.shortBias;
-  document.getElementById('microPattern').textContent = d.patternState;
-  document.getElementById('microComment').innerHTML = d.microComment;
-
-  document.getElementById('btcCoreState').textContent = store.BTC.core;
-  document.getElementById('btcCoreText').innerHTML = coreText('BTC', store.BTC.risk);
-  document.getElementById('ethCoreState').textContent = store.ETH.core;
-  document.getElementById('ethCoreText').innerHTML = coreText('ETH', store.ETH.risk);
-  document.getElementById('ethRelState').textContent = rel.state;
-  document.getElementById('ethRelText').innerHTML = rel.text;
-  document.getElementById('moveState').textContent = rel.state === 'Strength' ? 'Rotation up' : (rel.state === 'Weakness' ? 'Caution' : 'Mixed');
-  document.getElementById('moveText').innerHTML = `ETH Relative score: <strong>${rel.score}/100</strong>. Acest scor este folosit doar pentru alerts și interpretare în V16.`;
-
-  document.getElementById('relativeReasons').innerHTML = rel.reasons.map(x => `<li>${x}</li>`).join('');
-  document.getElementById('bearishWhy').innerHTML = d.bearishWhy.map(x => `<li>${x}</li>`).join('');
-  document.getElementById('notBearishYet').innerHTML = d.notBearishYet.map(x => `<li>${x}</li>`).join('');
-  document.getElementById('invalidateList').innerHTML = d.invalidateList.map(x => `<li>${x}</li>`).join('');
-
-  document.getElementById('holdBar').style.width = d.actions.hold + '%';
-  document.getElementById('partialBar').style.width = d.actions.partial + '%';
-  document.getElementById('waitBar').style.width = d.actions.wait + '%';
-  document.getElementById('reaccBar').style.width = d.actions.reacc + '%';
-  document.getElementById('holdText').textContent = d.actions.hold >= 60 ? 'Context relativ sănătos sau constructiv.' : 'Hold-ul nu mai are edge dominant.';
-  document.getElementById('partialText').textContent = d.actions.partial >= 60 ? 'Merită apărat profitul mai atent.' : 'Semnalul de profit-taking nu domină încă.';
-  document.getElementById('waitText').textContent = d.actions.wait >= 60 ? 'Confirmarea încă lipsește. Răbdarea poate avea edge.' : 'Nu e doar o fază de așteptare.';
-  document.getElementById('reaccText').textContent = d.actions.reacc >= 60 ? 'Apare teren pentru re-accumulare sau confirmare.' : 'Nu există încă setup bun de re-accumulare.';
-
-  document.getElementById('signalsConclusion').innerHTML =
-    `<strong>Action:</strong> ${d.exec}<br><br>` +
-    `În V16, ETH Relative nu schimbă încă action map-ul. El îți spune doar dacă slăbiciunea sau forța relativă a ETH față de BTC ar trebui să-ți crească sau să-ți scadă încrederea în interpretarea curentă.`;
-
-  document.getElementById('historyText').innerHTML = d.hist;
-  document.getElementById('historyExamples').innerHTML = d.historyExamples;
-
-  const labels = d.dCl.slice(-120).map((_,i)=>i+1);
-  renderLineChart('priceChart', labels, [{
-    data:d.dCl.slice(-120), borderColor: asset === 'BTC' ? '#f7931a' : '#627eea',
-    backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:.25
-  }]);
-  renderLineChart('mvrvChart', labels, [{
-    data:d.mvrvSeries.slice(-120), borderColor:'#ffb300', backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:.25
-  }]);
-  const rsiData = d.rsiDSeries.slice(-120);
-  const rsiLabels = rsiData.map((_,i)=>i+1);
-  renderLineChart('rsiChart', rsiLabels, [
-    { data:rsiData, borderColor:'#22d3ee', backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:.25 },
-    { data:rsiData.map(()=>70), borderColor:'rgba(255,51,85,.5)', backgroundColor:'transparent', borderWidth:1, pointRadius:0, borderDash:[6,6] },
-    { data:rsiData.map(()=>50), borderColor:'rgba(74,96,128,.8)', backgroundColor:'transparent', borderWidth:1, pointRadius:0, borderDash:[4,6] },
-    { data:rsiData.map(()=>30), borderColor:'rgba(0,232,122,.5)', backgroundColor:'transparent', borderWidth:1, pointRadius:0, borderDash:[6,6] }
-  ], { min:0, max:100 });
-
-  const fundingSeries = buildFundingSeries(d.funding, 120);
-  renderLineChart('fundingChart', fundingSeries.map((_,i)=>i+1), [{
-    data:fundingSeries, borderColor:'#22d3ee', backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:.25
-  }]);
-
-  const domSeries = buildDominanceSeries(store.dom, 120);
-  renderLineChart('domChart', domSeries.map((_,i)=>i+1), [{
-    data:domSeries, borderColor:'#a78bfa', backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:.25
-  }], { min:35, max:70 });
+Manual review
+What happened: ${x.evaluation.what_happened||'—'}
+What we missed: ${x.evaluation.what_we_missed||'—'}
+Lesson: ${x.evaluation.lesson_learned||'—'}
+Recommendation: ${x.recommendation.recommendation_text||'—'}</pre>`;
+}
+function saveReview(){
+  const logs=loadLogs(), id=document.getElementById('logSelect').value, i=logs.findIndex(x=>x.id===id); if(i<0)return;
+  logs[i].outcome.external_factor_yes_no=document.getElementById('external').value==='yes';
+  logs[i].evaluation.what_happened=document.getElementById('happened').value.trim();
+  logs[i].evaluation.what_we_missed=document.getElementById('missed').value.trim();
+  logs[i].evaluation.lesson_learned=document.getElementById('lesson').value.trim();
+  logs[i].recommendation.recommendation_text=document.getElementById('recommendation').value.trim();
+  logs[i].recommendation.recommendation_status=document.getElementById('recStatus').value;
+  logs[i].recommendation.change_decision=document.getElementById('decisionStatus').value;
+  saveLogs(logs); render(); pick(id);
 }
 async function init(){
-  try{
-    const raw = await fetchAll();
-    store.dom = raw.dom;
-    const ethbtc = Number(raw.ethT.lastPrice) / Number(raw.btcT.lastPrice);
-
-    store.BTC = processAsset('BTC', raw.btcT, raw.btcD, raw.btcW, raw.btcF, raw.dom, ethbtc);
-    store.ETH = processAsset('ETH', raw.ethT, raw.ethD, raw.ethW, raw.ethF, raw.dom, ethbtc);
-
-    store.ethRelative = buildEthRelativeScore({
-      ethbtc,
-      dominance: raw.dom,
-      rsiEth: store.ETH.rsiD,
-      rsiBtc: store.BTC.rsiD,
-      ethCore: store.ETH.core,
-      btcCore: store.BTC.core,
-      ethChg: store.ETH.chg,
-      btcChg: store.BTC.chg
-    });
-
-    document.getElementById('syncText').textContent = 'Ultimul sync: ' + new Date(raw.ts).toLocaleString('ro-RO') + ' · Binance + CoinGecko';
-    renderHome();
-    if(!document.getElementById('assetView').classList.contains('hidden')) renderAsset(currentAsset);
-  }catch(e){
-    document.getElementById('syncText').textContent = 'Eroare la încărcarea datelor: ' + e.message;
-    document.getElementById('marketState').textContent = 'EROARE';
-    document.getElementById('marketState').className = 'badge danger';
-    document.getElementById('alertsBox').innerHTML = '<div class="alert danger">Nu am putut încărca datele live. Reîncarcă pagina.</div>';
-  }
+  const [btcT,ethT,btcD,ethD,btcW,ethW,btcF,ethF,dom] = await Promise.all([
+    fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT').then(r=>r.json()),
+    fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=ETHUSDT').then(r=>r.json()),
+    fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=260').then(r=>r.json()),
+    fetch('https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1d&limit=260').then(r=>r.json()),
+    fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1w&limit=80').then(r=>r.json()),
+    fetch('https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1w&limit=80').then(r=>r.json()),
+    fetch('https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT').then(r=>r.json()),
+    fetch('https://fapi.binance.com/fapi/v1/premiumIndex?symbol=ETHUSDT').then(r=>r.json()),
+    fetch('https://api.coingecko.com/api/v3/global').then(r=>r.json())
+  ]);
+  model.raw={btcT,ethT,btcD,ethD,btcW,ethW,btcF,ethF,dom:dom.data.market_cap_percentage.btc};
+  model.btc=riskFrom(btcD,btcW,Number(btcF.lastFundingRate)*100,model.raw.dom,'BTC');
+  model.eth=riskFrom(ethD,ethW,Number(ethF.lastFundingRate)*100,model.raw.dom,'ETH');
+  model.rel=relativeState(Number(ethT.lastPrice)/Number(btcT.lastPrice),model.raw.dom,model.eth.rsiD,model.btc.rsiD,Number(ethT.priceChangePercent),Number(btcT.priceChangePercent),model.btc.core,model.eth.core);
+  model.dec=decision(model.btc,model.eth,model.rel);
+  autoSync();
+  render();
 }
 init();
-setInterval(init, 60000);
 </script>
 </body>
 </html>
