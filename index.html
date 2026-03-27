@@ -180,7 +180,7 @@ THINK BEFORE ACT: observam, recomandam, discutam si abia apoi adaptam modelul.</
 const KEY='crypto_decision_journal_v20_final';
 let model={};
 
-const API_CACHE_KEY='crypto_dashboard_v20_cache_v2';
+const API_CACHE_KEY='crypto_dashboard_v21_1_cache_v1';
 
 async function fetchJsonSmart(url, label){
   const res = await fetch(url, {cache:'no-store'});
@@ -196,6 +196,40 @@ async function fetchJsonSmart(url, label){
 }
 function saveApiCache(payload){ try{ localStorage.setItem(API_CACHE_KEY, JSON.stringify(payload)); }catch(e){} }
 function loadApiCache(){ try{ return JSON.parse(localStorage.getItem(API_CACHE_KEY)); }catch(e){ return null; } }
+
+function validatePayload(payload, sourceName){
+  const {marketArr, btc365, eth365, btc7, eth7, global} = payload || {};
+  if(!Array.isArray(marketArr)) throw new Error(sourceName + ': marketArr invalid');
+  const btcMarket = marketArr.find(x=>x.id==='bitcoin');
+  const ethMarket = marketArr.find(x=>x.id==='ethereum');
+  if(!btcMarket || !ethMarket) throw new Error(sourceName + ': BTC/ETH market objects missing');
+
+  const btcDaily = btc365?.prices?.map?.(x=>x[1]) || [];
+  const ethDaily = eth365?.prices?.map?.(x=>x[1]) || [];
+  const btcHourly = btc7?.prices?.map?.(x=>x[1]) || [];
+  const ethHourly = eth7?.prices?.map?.(x=>x[1]) || [];
+
+  if(btcDaily.length < 120) throw new Error(sourceName + ': BTC daily history too short');
+  if(ethDaily.length < 120) throw new Error(sourceName + ': ETH daily history too short');
+  if(btcHourly.length < 24) throw new Error(sourceName + ': BTC hourly history too short');
+  if(ethHourly.length < 24) throw new Error(sourceName + ': ETH hourly history too short');
+
+  const btcFallback = btcDaily.at(-1);
+  const ethFallback = ethDaily.at(-1);
+
+  if((!Number.isFinite(btcMarket.current_price) || btcMarket.current_price <= 0) && !Number.isFinite(btcFallback)){
+    throw new Error(sourceName + ': BTC price invalid');
+  }
+  if((!Number.isFinite(ethMarket.current_price) || ethMarket.current_price <= 0) && !Number.isFinite(ethFallback)){
+    throw new Error(sourceName + ': ETH price invalid');
+  }
+
+  const dom = global?.data?.market_cap_percentage?.btc;
+  if(!Number.isFinite(dom)) throw new Error(sourceName + ': dominance invalid');
+
+  return true;
+}
+
 
 async function loadFromCoinGecko(){
   const [marketArr, btc365, eth365, btc7, eth7, global] = await Promise.all([
@@ -781,9 +815,11 @@ async function init(){
     let sourceUsed = '';
     try{
       payload = await loadFromCoinGecko();
+      validatePayload(payload, 'CoinGecko');
       sourceUsed = 'CoinGecko';
     }catch(primaryErr){
       payload = await loadFromCryptoCompare();
+      validatePayload(payload, 'CryptoCompare');
       sourceUsed = 'CryptoCompare';
     }
 
@@ -820,11 +856,12 @@ async function init(){
     autoSync();
     render();
     document.getElementById('syncText').textContent='Ultimul sync: ' + new Date().toLocaleString('ro-RO') + ' · sursă activă: ' + sourceUsed;
-    document.getElementById('integrityBox').innerHTML += '<br><br><strong>Fallback pe două surse:</strong> CoinGecko primar, CryptoCompare secundar. Dacă ambele cad, dashboardul încearcă și cache local.';
+    document.getElementById('integrityBox').innerHTML += '<br><br><strong>Fallback pe două surse:</strong> CoinGecko primar, CryptoCompare secundar. Dacă una livrează payload incomplet pentru BTC sau ETH, dashboardul o respinge și trece la următoarea sursă / cache local.';
   } catch(e){
     const cached = loadApiCache();
     if(cached){
       try{
+        validatePayload(cached, 'cache');
         const {marketArr, btc365, eth365, btc7, eth7, global, source, cached_at} = cached;
         const btcMarket = marketArr.find(x=>x.id==='bitcoin');
         const ethMarket = marketArr.find(x=>x.id==='ethereum');
