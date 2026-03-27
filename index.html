@@ -243,14 +243,305 @@ async function loadFromCoinGecko(){
   return {source:'CoinGecko', marketArr, btc365, eth365, btc7, eth7, global};
 }
 
-async function loadFromCryptoCompare(){
+
+async function loadFromBinance(){
+  const [btcTicker, ethTicker, btcDay, ethDay, btcHour, ethHour, global] = await Promise.all([
+    fetchJsonSmart('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT','Binance BTC ticker'),
+    fetchJsonSmart('https://api.binance.com/api/v3/ticker/24hr?symbol=ETHUSDT','Binance ETH ticker'),
+    fetchJsonSmart('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=365','Binance BTC 365d'),
+    fetchJsonSmart('https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1d&limit=365','Binance ETH 365d'),
+    fetchJsonSmart('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=168','Binance BTC 7d'),
+    fetchJsonSmart('https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1h&limit=168','Binance ETH 7d'),
+    fetchJsonSmart('https://api.coingecko.com/api/v3/global','CoinGecko global for dominance')
+  ]);
+
+  const btcPrice = Number(btcTicker.lastPrice);
+  const ethPrice = Number(ethTicker.lastPrice);
+  const btcChg = Number(btcTicker.priceChangePercent || 0);
+  const ethChg = Number(ethTicker.priceChangePercent || 0);
+  const btcQuoteVol = Number(btcTicker.quoteVolume || 0);
+  const ethQuoteVol = Number(ethTicker.quoteVolume || 0);
+
+  const marketArr = [
+    {
+      id:'bitcoin',
+      current_price: btcPrice,
+      price_change_percentage_24h: btcChg,
+      price_change_percentage_24h_in_currency: btcChg,
+      total_volume: btcQuoteVol,
+      market_cap: Math.max(btcQuoteVol * 20, 1)
+    },
+    {
+      id:'ethereum',
+      current_price: ethPrice,
+      price_change_percentage_24h: ethChg,
+      price_change_percentage_24h_in_currency: ethChg,
+      total_volume: ethQuoteVol,
+      market_cap: Math.max(ethQuoteVol * 20, 1)
+    }
+  ];
+
+  const btc365 = {prices: btcDay.map(x => [Number(x[0]), Number(x[4])])};
+  const eth365 = {prices: ethDay.map(x => [Number(x[0]), Number(x[4])])};
+  const btc7 = {prices: btcHour.map(x => [Number(x[0]), Number(x[4])])};
+  const eth7 = {prices: ethHour.map(x => [Number(x[0]), Number(x[4])])};
+
+  return {source:'Binance', marketArr, btc365, eth365, btc7, eth7, global};
+}
+
+!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Crypto Dashboard V20 Final</title>
+<style>
+  :root{
+    --bg:#0b0f14;--panel:#111827;--panel2:#0f172a;--border:#243244;
+    --text:#e6edf3;--muted:#94a3b8;--green:#10b981;--yellow:#f59e0b;--red:#ef4444;
+    --btc:#f7931a;--eth:#627eea;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+  .wrap{max-width:1380px;margin:auto;padding:20px}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  h1,h2,h3,h4{margin:0 0 10px 0}
+  .small{font-size:12px;color:var(--muted)}
+  .big{font-size:24px;font-weight:700}
+  .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;border:1px solid var(--border)}
+  .safe{color:var(--green);background:rgba(16,185,129,.08)}
+  .warn{color:var(--yellow);background:rgba(245,158,11,.08)}
+  .danger{color:var(--red);background:rgba(239,68,68,.08)}
+  .tabs,.subtabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  button{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer}
+  .active{border-color:var(--green);color:var(--green)}
+  .hidden{display:none}
+  .msg{padding:10px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.03)}
+  .good{color:var(--green)} .bad{color:var(--red)} .mid{color:var(--yellow)}
+  textarea,select{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+  canvas{width:100%;height:280px;background:var(--panel2);border-radius:12px;border:1px solid var(--border)}
+  pre{white-space:pre-wrap;line-height:1.65}
+  ul{margin:8px 0 0 18px}
+  @media (max-width:980px){.grid,.grid2,.grid3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Crypto Dashboard V20 Final</h1>
+  <div class="small" id="syncText">Se încarcă...</div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('dashboard',this)">Dashboard</button>
+    <button class="tab" onclick="showTab('journal',this)">Decision Journal</button>
+  </div>
+
+  <div id="dashboard">
+    <div class="card">
+      <h3>Home</h3>
+      <div class="grid">
+        <div><div class="small">BTC Core</div><div id="btcCore" class="big">--</div></div>
+        <div><div class="small">ETH Core</div><div id="ethCore" class="big">--</div></div>
+        <div><div class="small">ETH Relative</div><div id="ethRel" class="big">--</div></div>
+        <div><div class="small">Regim</div><div id="regime" class="big">--</div></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>BTC</h3>
+        <div id="btcBox"></div>
+      </div>
+      <div class="card">
+        <h3>ETH</h3>
+        <div id="ethBox"></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>BTC — Short term / Long term</h3>
+        <div id="btcSTLT"></div>
+      </div>
+      <div class="card">
+        <h3>ETH — Short term / Long term</h3>
+        <div id="ethSTLT"></div>
+      </div>
+    </div>
+
+    <div class="grid3">
+      <div class="card">
+        <h3>Decision Summary</h3>
+        <div id="summary"></div>
+      </div>
+      <div class="card">
+        <h3>Historical Tendency</h3>
+        <div id="history"></div>
+      </div>
+      <div class="card">
+        <h3>Confluence Breakdown</h3>
+        <div id="confluence"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Mini concluzie + explicații concrete</h3>
+      <div id="mini"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>BTC vs ETH (365d normalized)</h3>
+        <canvas id="priceChart" width="620" height="280"></canvas>
+      </div>
+      <div class="card">
+        <h3>RSI Daily (14)</h3>
+        <canvas id="rsiChart" width="620" height="280"></canvas>
+      </div>
+    </div>
+
+
+    <div class="card">
+      <h3>Fibonacci Engine V2</h3>
+      <div id="fibV2"></div>
+    </div>
+
+    <div class="card">
+      <h3>Integritate date / limitări</h3>
+      <div id="integrityBox" class="small"></div>
+    </div>
+  </div>
+
+  <div id="journal" class="hidden">
+    <div class="card">
+      <h3>Rules</h3>
+      <pre>DISCIPLINA: logurile nu se altereaza si nu se sterg.
+FLEXIBILITATEA: patternurile genereaza recomandari, nu schimbari automate.
+THINK BEFORE ACT: observam, recomandam, discutam si abia apoi adaptam modelul.</pre>
+    </div>
+
+    <div class="grid">
+      <div class="card"><div class="small">Logs total</div><div id="logTotal" class="big">0</div></div>
+      <div class="card"><div class="small">Correct</div><div id="logCorrect" class="big">0</div></div>
+      <div class="card"><div class="small">Partial</div><div id="logPartial" class="big">0</div></div>
+      <div class="card"><div class="small">Wrong</div><div id="logWrong" class="big">0</div></div>
+    </div>
+
+    <div class="card">
+      <h3>Daily Logs</h3>
+      <div id="tableBox"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>Manual Review</h3>
+        <div class="small">Snapshot-ul este locked. Review-ul este add-only.</div>
+        <div style="margin-top:10px"><select id="logSelect"></select></div>
+        <div style="margin-top:10px"><select id="external"><option value="no">External factor: No</option><option value="yes">External factor: Yes</option></select></div>
+        <div style="margin-top:10px"><textarea id="happened" placeholder="What happened"></textarea></div>
+        <div style="margin-top:10px"><textarea id="missed" placeholder="What we missed"></textarea></div>
+        <div style="margin-top:10px"><textarea id="lesson" placeholder="Lesson learned"></textarea></div>
+        <div style="margin-top:10px"><textarea id="recommendation" placeholder="Recommendation"></textarea></div>
+        <div style="margin-top:10px"><select id="recStatus">
+          <option value="no_change_suggested">No change suggested</option>
+          <option value="review_suggested">Review suggested</option>
+          <option value="strong_review_suggested">Strong review suggested</option>
+        </select></div>
+        <div style="margin-top:10px"><select id="decisionStatus">
+          <option value="not_reviewed">Not reviewed</option>
+          <option value="under_discussion">Under discussion</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select></div>
+        <div style="margin-top:10px"><button onclick="saveReview()">Save Manual Review</button></div>
+      </div>
+      <div class="card">
+        <h3>Selected Log</h3>
+        <div id="detailBox"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEY='crypto_decision_journal_v20_final';
+let model={};
+
+const API_CACHE_KEY='crypto_dashboard_v21_1_cache_v1';
+
+async function fetchJsonSmart(url, label){
+  const res = await fetch(url, {cache:'no-store'});
+  const raw = await res.text();
+  if(!res.ok) throw new Error(`${label}: HTTP ${res.status}`);
+  try{
+    return JSON.parse(raw);
+  }catch(e){
+    const trimmed = raw.trim().slice(0,120);
+    if(trimmed.toLowerCase().includes('throttled')) throw new Error(`${label}: throttled`);
+    throw new Error(`${label}: invalid JSON (${trimmed})`);
+  }
+}
+function saveApiCache(payload){ try{ localStorage.setItem(API_CACHE_KEY, JSON.stringify(payload)); }catch(e){} }
+function loadApiCache(){ try{ return JSON.parse(localStorage.getItem(API_CACHE_KEY)); }catch(e){ return null; } }
+
+function validatePayload(payload, sourceName){
+  const {marketArr, btc365, eth365, btc7, eth7, global} = payload || {};
+  if(!Array.isArray(marketArr)) throw new Error(sourceName + ': marketArr invalid');
+  const btcMarket = marketArr.find(x=>x.id==='bitcoin');
+  const ethMarket = marketArr.find(x=>x.id==='ethereum');
+  if(!btcMarket || !ethMarket) throw new Error(sourceName + ': BTC/ETH market objects missing');
+
+  const btcDaily = btc365?.prices?.map?.(x=>x[1]) || [];
+  const ethDaily = eth365?.prices?.map?.(x=>x[1]) || [];
+  const btcHourly = btc7?.prices?.map?.(x=>x[1]) || [];
+  const ethHourly = eth7?.prices?.map?.(x=>x[1]) || [];
+
+  if(btcDaily.length < 120) throw new Error(sourceName + ': BTC daily history too short');
+  if(ethDaily.length < 120) throw new Error(sourceName + ': ETH daily history too short');
+  if(btcHourly.length < 24) throw new Error(sourceName + ': BTC hourly history too short');
+  if(ethHourly.length < 24) throw new Error(sourceName + ': ETH hourly history too short');
+
+  const btcFallback = btcDaily.at(-1);
+  const ethFallback = ethDaily.at(-1);
+
+  if((!Number.isFinite(btcMarket.current_price) || btcMarket.current_price <= 0) && !Number.isFinite(btcFallback)){
+    throw new Error(sourceName + ': BTC price invalid');
+  }
+  if((!Number.isFinite(ethMarket.current_price) || ethMarket.current_price <= 0) && !Number.isFinite(ethFallback)){
+    throw new Error(sourceName + ': ETH price invalid');
+  }
+
+  const dom = global?.data?.market_cap_percentage?.btc;
+  if(!Number.isFinite(dom)) throw new Error(sourceName + ': dominance invalid');
+
+  return true;
+}
+
+
+async function loadFromCoinGecko(){
+  const [marketArr, btc365, eth365, btc7, eth7, global] = await Promise.all([
+    fetchJsonSmart('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum&price_change_percentage=24h','CoinGecko markets'),
+    fetchJsonSmart('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=365&interval=daily','CoinGecko BTC 365d'),
+    fetchJsonSmart('https://api.coingecko.com/api/v3/coins/ethereum/market_chart?vs_currency=usd&days=365&interval=daily','CoinGecko ETH 365d'),
+    fetchJsonSmart('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=7&interval=hourly','CoinGecko BTC 7d'),
+    fetchJsonSmart('https://api.coingecko.com/api/v3/coins/ethereum/market_chart?vs_currency=usd&days=7&interval=hourly','CoinGecko ETH 7d'),
+    fetchJsonSmart('https://api.coingecko.com/api/v3/global','CoinGecko global')
+  ]);
+  return {source:'CoinGecko', marketArr, btc365, eth365, btc7, eth7, global};
+}
+
+async function loadFromBinance(){
   const [btcPrice, ethPrice, btcDay, ethDay, btcHour, ethHour] = await Promise.all([
-    fetchJsonSmart('https://min-api.cryptocompare.com/data/pricemultifull?fsyms=BTC&tsyms=USD','CryptoCompare BTC price'),
-    fetchJsonSmart('https://min-api.cryptocompare.com/data/pricemultifull?fsyms=ETH&tsyms=USD','CryptoCompare ETH price'),
-    fetchJsonSmart('https://min-api.cryptocompare.com/data/v2/histoday?fsym=BTC&tsym=USD&limit=365','CryptoCompare BTC histoday'),
-    fetchJsonSmart('https://min-api.cryptocompare.com/data/v2/histoday?fsym=ETH&tsym=USD&limit=365','CryptoCompare ETH histoday'),
-    fetchJsonSmart('https://min-api.cryptocompare.com/data/v2/histohour?fsym=BTC&tsym=USD&limit=168','CryptoCompare BTC histohour'),
-    fetchJsonSmart('https://min-api.cryptocompare.com/data/v2/histohour?fsym=ETH&tsym=USD&limit=168','CryptoCompare ETH histohour')
+    fetchJsonSmart('https://min-api.cryptocompare.com/data/pricemultifull?fsyms=BTC&tsyms=USD','Binance BTC price'),
+    fetchJsonSmart('https://min-api.cryptocompare.com/data/pricemultifull?fsyms=ETH&tsyms=USD','Binance ETH price'),
+    fetchJsonSmart('https://min-api.cryptocompare.com/data/v2/histoday?fsym=BTC&tsym=USD&limit=365','Binance BTC histoday'),
+    fetchJsonSmart('https://min-api.cryptocompare.com/data/v2/histoday?fsym=ETH&tsym=USD&limit=365','Binance ETH histoday'),
+    fetchJsonSmart('https://min-api.cryptocompare.com/data/v2/histohour?fsym=BTC&tsym=USD&limit=168','Binance BTC histohour'),
+    fetchJsonSmart('https://min-api.cryptocompare.com/data/v2/histohour?fsym=ETH&tsym=USD&limit=168','Binance ETH histohour')
   ]);
   const btcRaw = btcPrice.RAW?.BTC?.USD || {};
   const ethRaw = ethPrice.RAW?.ETH?.USD || {};
@@ -279,7 +570,7 @@ async function loadFromCryptoCompare(){
   const btcCap = btcRaw.MKTCAP || 0, ethCap = ethRaw.MKTCAP || 0;
   const dom = (btcCap && ethCap) ? (btcCap / (btcCap + ethCap) * 100) : 55;
   const global = {data:{market_cap_percentage:{btc:dom}}};
-  return {source:'CryptoCompare', marketArr, btc365, eth365, btc7, eth7, global};
+  return {source:'Binance', marketArr, btc365, eth365, btc7, eth7, global};
 }
 
 
@@ -818,9 +1109,9 @@ async function init(){
       validatePayload(payload, 'CoinGecko');
       sourceUsed = 'CoinGecko';
     }catch(primaryErr){
-      payload = await loadFromCryptoCompare();
-      validatePayload(payload, 'CryptoCompare');
-      sourceUsed = 'CryptoCompare';
+      payload = await loadFromBinance();
+      validatePayload(payload, 'Binance');
+      sourceUsed = 'Binance';
     }
 
     const {marketArr, btc365, eth365, btc7, eth7, global} = payload;
@@ -856,7 +1147,7 @@ async function init(){
     autoSync();
     render();
     document.getElementById('syncText').textContent='Ultimul sync: ' + new Date().toLocaleString('ro-RO') + ' · sursă activă: ' + sourceUsed;
-    document.getElementById('integrityBox').innerHTML += '<br><br><strong>Fallback pe două surse:</strong> CoinGecko primar, CryptoCompare secundar. Dacă una livrează payload incomplet pentru BTC sau ETH, dashboardul o respinge și trece la următoarea sursă / cache local.';
+    document.getElementById('integrityBox').innerHTML += '<br><br><strong>Fallback pe două surse:</strong> CoinGecko primar, Binance secundar. Dacă una livrează payload incomplet pentru BTC sau ETH, dashboardul o respinge și trece la următoarea sursă / cache local.';
   } catch(e){
     const cached = loadApiCache();
     if(cached){
@@ -899,7 +1190,7 @@ async function init(){
     }
 
     document.getElementById('syncText').textContent='Eroare la încărcare: '+e.message;
-    const msg = `Am încercat două surse publice și apoi cache local.
+    const msg = `Am încercat două surse publice validate și apoi cache local.
 Dacă eroarea persistă, înseamnă că browserul sau rețeaua blochează cererile către ambele surse.
 Încearcă refresh sau deschide din nou pagina mai târziu.`;
     document.getElementById('summary').innerHTML = '<div class="msg">'+msg+'</div>';
