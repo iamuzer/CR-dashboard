@@ -113,6 +113,12 @@
       </div>
     </div>
 
+
+    <div class="card">
+      <h3>Fibonacci Engine V2</h3>
+      <div id="fibV2"></div>
+    </div>
+
     <div class="card">
       <h3>Integritate date / limitări</h3>
       <div id="integrityBox" class="small"></div>
@@ -288,6 +294,15 @@ function tfFromHourly(hourly, n){
   if(n===1) return hourly.slice();
   return hourly.filter((_,i)=>i%n===0);
 }
+
+function computeShortBias(totalScore, rsi1h, rsi4h, ich4h){
+  if(totalScore <= -40) return 'Bearish';
+  if(totalScore >= 40) return 'Bullish';
+  if(rsi1h < 45 && rsi4h < 45 && ich4h.priceVsCloud === 'below') return 'Bearish';
+  if(rsi1h > 55 && rsi4h > 55 && ich4h.priceVsCloud === 'above') return 'Bullish';
+  return 'Neutral';
+}
+
 function signalLabel(score){
   if(score>=40) return 'Strong Bullish';
   if(score>=20) return 'Bullish';
@@ -313,6 +328,28 @@ function fibAnalysis(prices){
   });
   return {high,low,current,retr,levels,nearest};
 }
+
+function fibRange(levelPrice, pct=0.015){
+  return {low: levelPrice*(1-pct), high: levelPrice*(1+pct)};
+}
+function fibExtensionAnalysis(prices){
+  const recent=prices.slice(-90);
+  const high=Math.max(...recent), low=Math.min(...recent);
+  const range=high-low || 1;
+  return {
+    bullish: {
+      1.0: high,
+      1.272: high + range*0.272,
+      1.618: high + range*0.618
+    },
+    bearish: {
+      1.0: low,
+      1.272: low - range*0.272,
+      1.618: low - range*0.618
+    }
+  };
+}
+
 function ichimokuProxy(prices){
   // close-based proxy; not full OHLC ichimoku
   const len = prices.length;
@@ -395,6 +432,7 @@ function computeAssetEngine(name, marketItem, pricesDaily, pricesHourly, dominan
   const ich1w = ichimokuProxy(weekly);
 
   const fib = fibAnalysis(daily);
+  const fibExt = fibExtensionAnalysis(daily);
   const money = moneyContext(marketItem);
 
   const price = pricesDaily.at(-1);
@@ -411,18 +449,17 @@ function computeAssetEngine(name, marketItem, pricesDaily, pricesHourly, dominan
   else { dominanceScore = dominance>55 ? -5 : dominance<53 ? 5 : 0; }
 
   let ethRelScore = 0;
-  if(name==='ETH') ethRelScore = ethbtcState==='weak' ? -10 : ethbtcState==='strong' ? 10 : 0;
+  if(name==='ETH') ethRelScore = ethbtcState==='Weakness' ? -10 : ethbtcState==='Strength' ? 10 : 0;
 
   const total = rsiScore + ichScore + fibScore + money.fundingScore + money.flowScore + dominanceScore + ethRelScore;
   const core = coreFromRisk(Math.min(100, Math.max(0, Math.round(50 - total)))); // convert confluence to risk-ish label
-  const shortBias = (rsi1h<45 || rsi4h<45 || ich4h.priceVsCloud==='below') ? 'Bearish'
-    : (rsi1h>55 || rsi4h>55 || ich4h.priceVsCloud==='above') ? 'Bullish' : 'Neutral';
+  const shortBias = computeShortBias(total, rsi1h, rsi4h, ich4h);
 
   return {
     name, price, daily, rsi1dSeries,
     rsi:{'1h':rsi1h,'4h':rsi4h,'1d':rsi1d,'1w':rsi1w,'1m':rsi1m},
     ich:{'4h':ich4h,'1d':ich1d,'1w':ich1w},
-    fib, fibText:fibObj.text, money, total, core, shortBias, dist, mvrv
+    fib, fibExt, fibText:fibObj.text, money, total, core, shortBias, dist, mvrv
   };
 }
 function computeDecision(btc, eth, relState, dominance){
@@ -556,14 +593,15 @@ function drawSimple(canvasId, seriesA, seriesB, colorA, colorB, minY=null, maxY=
   ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.strokeRect(pad,pad,w-pad*2,h-pad*2);
 }
 function renderAssetBox(asset, marketChg){
-  const safePrice = Number.isFinite(asset.price) ? asset.price : (asset.daily?.at(-1) ?? 0);
+  const safePrice = (Number.isFinite(asset.price) && asset.price > 0) ? asset.price : (asset.daily?.at(-1) ?? 0);
   const fibNearestPrice = asset.fib?.levels?.[asset.fib.nearest] ?? null;
+  const fibR = fibNearestPrice ? fibRange(fibNearestPrice) : null;
   return `<span class="badge ${badgeCls(asset.core)}">${asset.core}</span><br><br>
     <strong>${fmtUsd(safePrice)}</strong> <span class="${marketChg>=0?'good':'bad'}">${fmtPct(marketChg)}</span><br>
     RSI daily / weekly / monthly: ${asset.rsi['1d'].toFixed(1)} / ${asset.rsi['1w'].toFixed(1)} / ${asset.rsi['1m'].toFixed(1)}<br>
     Score: <strong>${asset.total}</strong> (${signalLabel(asset.total)})<br>
     Short bias: <strong>${asset.shortBias}</strong><br>
-    Fib: nearest ${asset.fib.nearest} (${fibNearestPrice ? fmtUsd(fibNearestPrice) : 'n/a'})<br>
+    Fib nearest: ${asset.fib.nearest} (${fibNearestPrice ? fmtUsd(fibNearestPrice) : 'n/a'}) ${fibR ? '['+fmtUsd(fibR.low)+' – '+fmtUsd(fibR.high)+']' : ''}<br>
     Money flow proxy: <strong>${asset.money.flowState}</strong>`;
 }
 function renderSTLT(asset, label){
@@ -575,8 +613,14 @@ function renderSTLT(asset, label){
   1D → ${asset.core}<br>
   1W → RSI ${asset.rsi['1w'].toFixed(1)} / Ichimoku ${asset.ich['1w'].priceVsCloud}, ${asset.ich['1w'].tkCross}<br>
   1M → RSI ${asset.rsi['1m'].toFixed(1)} / cycle proxy ${(asset.mvrv>2.2?'late / extended':'not extreme')}<br><br>`;
+  const nearP = asset.fib.levels[asset.fib.nearest];
+  const nearR = fibRange(nearP);
+  const bull1272 = asset.fibExt.bullish[1.272], bear1272 = asset.fibExt.bearish[1.272];
   const exp = `<strong>Explicație:</strong><br>
   ${asset.fibText}<br>
+  Zona curentă fib ${asset.fib.nearest}: ${fmtUsd(nearR.low)} – ${fmtUsd(nearR.high)}<br>
+  Bullish extension 1.272: ~${fmtUsd(bull1272)}<br>
+  Bearish extension 1.272: ~${fmtUsd(bear1272)}<br>
   ${asset.money.fundingText}<br>
   ${asset.money.flowText}`;
   return st + lt + exp;
@@ -610,10 +654,14 @@ function render(){
   document.getElementById('confluence').innerHTML = `<strong>Bearish factors:</strong><ul>${model.decision.bearishFactors.map(x=>`<li>${x}</li>`).join('') || '<li>nu există aliniere bearish puternică</li>'}</ul>
     <strong>Bullish factors:</strong><ul>${model.decision.bullishFactors.map(x=>`<li>${x}</li>`).join('') || '<li>nu există aliniere bullish puternică</li>'}</ul>`;
 
-  const nextFibBTC = model.btc.fib.nearest==='0.786' ? model.btc.fib.high : model.btc.fib.levels[0.5];
-  const nextFibETH = model.eth.fib.nearest==='0.786' ? model.eth.fib.high : model.eth.fib.levels[0.5];
+  const nextFibBTC = model.btc.fib.nearest==='0.786' ? model.btc.fibExt.bullish[1.0] : model.btc.fib.levels[0.5];
+  const nextFibETH = model.eth.fib.nearest==='0.786' ? model.eth.fibExt.bullish[1.0] : model.eth.fib.levels[0.5];
   const btcFibNearestPrice = model.btc.fib.levels[model.btc.fib.nearest];
   const ethFibNearestPrice = model.eth.fib.levels[model.eth.fib.nearest];
+  const btcFibNearestRange = fibRange(btcFibNearestPrice);
+  const ethFibNearestRange = fibRange(ethFibNearestPrice);
+  const btcBearExt = model.btc.fibExt.bearish[1.272];
+  const ethBearExt = model.eth.fibExt.bearish[1.272];
   document.getElementById('mini').innerHTML = `
     <strong>Verdict scurt:</strong> ${model.decision.verdict}<br>
     <strong>Acțiune:</strong> ${model.decision.action}<br><br>
@@ -626,8 +674,8 @@ function render(){
     • ETH Relative = ${model.rel}<br><br>
 
     <strong>Comentariu Fibonacci:</strong><br>
-    BTC: prețul este aproape de zona Fibonacci ${model.btc.fib.nearest} (≈ ${fmtUsd(btcFibNearestPrice)}). Nivelurile trebuie tratate ca <strong>range</strong>, nu preț fix. Următoarea zonă probabilă este în jur de ${fmtUsd(nextFibBTC)} dacă momentum-ul continuă în aceeași direcție.<br>
-    ETH: prețul este aproape de zona Fibonacci ${model.eth.fib.nearest} (≈ ${fmtUsd(ethFibNearestPrice)}). Și aici discutăm de zonă probabilă, nu target exact. Următoarea zonă posibilă este în jur de ${fmtUsd(nextFibETH)} dacă presiunea persistă.<br><br>
+    BTC: prețul este aproape de zona Fibonacci ${model.btc.fib.nearest} (centru ≈ ${fmtUsd(btcFibNearestPrice)}, range ${fmtUsd(btcFibNearestRange.low)} – ${fmtUsd(btcFibNearestRange.high)}). Dacă momentum-ul se întărește în sus, următoarea zonă bullish probabilă este în jur de ${fmtUsd(nextFibBTC)}. Dacă structura cedează, extension bearish 1.272 este în jur de ${fmtUsd(btcBearExt)}.<br>
+    ETH: prețul este aproape de zona Fibonacci ${model.eth.fib.nearest} (centru ≈ ${fmtUsd(ethFibNearestPrice)}, range ${fmtUsd(ethFibNearestRange.low)} – ${fmtUsd(ethFibNearestRange.high)}). Dacă momentum-ul se întărește în sus, următoarea zonă bullish probabilă este în jur de ${fmtUsd(nextFibETH)}. Dacă presiunea persistă în jos, extension bearish 1.272 este în jur de ${fmtUsd(ethBearExt)}.<br><br>
 
     <strong>Money flow / positioning:</strong><br>
     BTC: ${model.btc.money.fundingText} ${model.btc.money.flowText}<br>
@@ -639,6 +687,24 @@ function render(){
       : model.rel==='Strength'
       ? 'ETH arată forță relativă și reduce încrederea într-un bearish imediat, însă macro structure rămâne filtrul final.'
       : 'Semnalele relative sunt neutre, deci decizia trebuie să se bazeze mai mult pe RSI + Ichimoku + poziționarea în zonele Fibonacci.'}`;
+
+
+  document.getElementById('fibV2').innerHTML = `
+    <strong>BTC Retracement:</strong><br>
+    0.382 → ${fmtUsd(model.btc.fib.levels[0.382])} · 0.5 → ${fmtUsd(model.btc.fib.levels[0.5])} · 0.618 → ${fmtUsd(model.btc.fib.levels[0.618])} · 0.786 → ${fmtUsd(model.btc.fib.levels[0.786])}<br>
+    <strong>BTC Bullish Extension:</strong><br>
+    1.0 → ${fmtUsd(model.btc.fibExt.bullish[1.0])} · 1.272 → ${fmtUsd(model.btc.fibExt.bullish[1.272])} · 1.618 → ${fmtUsd(model.btc.fibExt.bullish[1.618])}<br>
+    <strong>BTC Bearish Extension:</strong><br>
+    1.0 → ${fmtUsd(model.btc.fibExt.bearish[1.0])} · 1.272 → ${fmtUsd(model.btc.fibExt.bearish[1.272])} · 1.618 → ${fmtUsd(model.btc.fibExt.bearish[1.618])}<br><br>
+
+    <strong>ETH Retracement:</strong><br>
+    0.382 → ${fmtUsd(model.eth.fib.levels[0.382])} · 0.5 → ${fmtUsd(model.eth.fib.levels[0.5])} · 0.618 → ${fmtUsd(model.eth.fib.levels[0.618])} · 0.786 → ${fmtUsd(model.eth.fib.levels[0.786])}<br>
+    <strong>ETH Bullish Extension:</strong><br>
+    1.0 → ${fmtUsd(model.eth.fibExt.bullish[1.0])} · 1.272 → ${fmtUsd(model.eth.fibExt.bullish[1.272])} · 1.618 → ${fmtUsd(model.eth.fibExt.bullish[1.618])}<br>
+    <strong>ETH Bearish Extension:</strong><br>
+    1.0 → ${fmtUsd(model.eth.fibExt.bearish[1.0])} · 1.272 → ${fmtUsd(model.eth.fibExt.bearish[1.272])} · 1.618 → ${fmtUsd(model.eth.fibExt.bearish[1.618])}<br><br>
+
+    <span class="small">Retracement = zone de reacție. Extension = unde poate continua mișcarea dacă structura confirmă direcția.</span>`;
 
   document.getElementById('integrityBox').innerHTML = `
     RSI și Ichimoku sunt calculate direct din seriile de preț și au integritate mai mare.<br>
@@ -730,6 +796,10 @@ async function init(){
     const ethDaily = eth365.prices.map(x=>x[1]);
     const btcHourly = btc7.prices.map(x=>x[1]);
     const ethHourly = eth7.prices.map(x=>x[1]);
+
+    if(!Number.isFinite(btcMarket.current_price) || btcMarket.current_price <= 0) btcMarket.current_price = btcDaily.at(-1);
+    if(!Number.isFinite(ethMarket.current_price) || ethMarket.current_price <= 0) ethMarket.current_price = ethDaily.at(-1);
+
     const rel = relativeState(
       ethMarket.current_price,
       btcMarket.current_price,
@@ -741,8 +811,6 @@ async function init(){
     );
 
     model.global = global.data;
-    if(!Number.isFinite(btcMarket.current_price)) btcMarket.current_price = btcDaily.at(-1);
-    if(!Number.isFinite(ethMarket.current_price)) ethMarket.current_price = ethDaily.at(-1);
     model.market = {btc:btcMarket, eth:ethMarket};
     model.rel = rel;
     model.btc = computeAssetEngine('BTC', btcMarket, btcDaily, btcHourly, global.data.market_cap_percentage.btc, rel);
@@ -764,6 +832,10 @@ async function init(){
         const ethDaily = eth365.prices.map(x=>x[1]);
         const btcHourly = btc7.prices.map(x=>x[1]);
         const ethHourly = eth7.prices.map(x=>x[1]);
+
+        if(!Number.isFinite(btcMarket.current_price) || btcMarket.current_price <= 0) btcMarket.current_price = btcDaily.at(-1);
+        if(!Number.isFinite(ethMarket.current_price) || ethMarket.current_price <= 0) ethMarket.current_price = ethDaily.at(-1);
+
         const rel = relativeState(
           ethMarket.current_price,
           btcMarket.current_price,
@@ -775,8 +847,6 @@ async function init(){
         );
 
         model.global = global.data;
-        if(!Number.isFinite(btcMarket.current_price)) btcMarket.current_price = btcDaily.at(-1);
-        if(!Number.isFinite(ethMarket.current_price)) ethMarket.current_price = ethDaily.at(-1);
         model.market = {btc:btcMarket, eth:ethMarket};
         model.rel = rel;
         model.btc = computeAssetEngine('BTC', btcMarket, btcDaily, btcHourly, global.data.market_cap_percentage.btc, rel);
