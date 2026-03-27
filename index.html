@@ -556,12 +556,14 @@ function drawSimple(canvasId, seriesA, seriesB, colorA, colorB, minY=null, maxY=
   ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.strokeRect(pad,pad,w-pad*2,h-pad*2);
 }
 function renderAssetBox(asset, marketChg){
+  const safePrice = Number.isFinite(asset.price) ? asset.price : (asset.daily?.at(-1) ?? 0);
+  const fibNearestPrice = asset.fib?.levels?.[asset.fib.nearest] ?? null;
   return `<span class="badge ${badgeCls(asset.core)}">${asset.core}</span><br><br>
-    <strong>${fmtUsd(asset.price)}</strong> <span class="${marketChg>=0?'good':'bad'}">${fmtPct(marketChg)}</span><br>
+    <strong>${fmtUsd(safePrice)}</strong> <span class="${marketChg>=0?'good':'bad'}">${fmtPct(marketChg)}</span><br>
     RSI daily / weekly / monthly: ${asset.rsi['1d'].toFixed(1)} / ${asset.rsi['1w'].toFixed(1)} / ${asset.rsi['1m'].toFixed(1)}<br>
     Score: <strong>${asset.total}</strong> (${signalLabel(asset.total)})<br>
     Short bias: <strong>${asset.shortBias}</strong><br>
-    Fib: nearest ${asset.fib.nearest}<br>
+    Fib: nearest ${asset.fib.nearest} (${fibNearestPrice ? fmtUsd(fibNearestPrice) : 'n/a'})<br>
     Money flow proxy: <strong>${asset.money.flowState}</strong>`;
 }
 function renderSTLT(asset, label){
@@ -608,8 +610,10 @@ function render(){
   document.getElementById('confluence').innerHTML = `<strong>Bearish factors:</strong><ul>${model.decision.bearishFactors.map(x=>`<li>${x}</li>`).join('') || '<li>nu există aliniere bearish puternică</li>'}</ul>
     <strong>Bullish factors:</strong><ul>${model.decision.bullishFactors.map(x=>`<li>${x}</li>`).join('') || '<li>nu există aliniere bullish puternică</li>'}</ul>`;
 
-  const nextFibBTC = model.btc.fib.nearest==='0.786' ? model.btc.fib.levels[1] : model.btc.fib.levels[0.5];
-  const nextFibETH = model.eth.fib.nearest==='0.786' ? model.eth.fib.levels[1] : model.eth.fib.levels[0.5];
+  const nextFibBTC = model.btc.fib.nearest==='0.786' ? model.btc.fib.high : model.btc.fib.levels[0.5];
+  const nextFibETH = model.eth.fib.nearest==='0.786' ? model.eth.fib.high : model.eth.fib.levels[0.5];
+  const btcFibNearestPrice = model.btc.fib.levels[model.btc.fib.nearest];
+  const ethFibNearestPrice = model.eth.fib.levels[model.eth.fib.nearest];
   document.getElementById('mini').innerHTML = `
     <strong>Verdict scurt:</strong> ${model.decision.verdict}<br>
     <strong>Acțiune:</strong> ${model.decision.action}<br><br>
@@ -622,8 +626,8 @@ function render(){
     • ETH Relative = ${model.rel}<br><br>
 
     <strong>Comentariu Fibonacci:</strong><br>
-    BTC: prețul este aproape de zona Fibonacci ${model.btc.fib.nearest}. Nivelurile trebuie tratate ca <strong>range</strong>, nu preț fix. Următoarea zonă probabilă este în jur de ${fmtUsd(nextFibBTC)} dacă momentum-ul continuă în aceeași direcție.<br>
-    ETH: prețul este aproape de zona Fibonacci ${model.eth.fib.nearest}. Și aici discutăm de zonă probabilă, nu target exact. Următoarea zonă posibilă este în jur de ${fmtUsd(nextFibETH)} dacă presiunea persistă.<br><br>
+    BTC: prețul este aproape de zona Fibonacci ${model.btc.fib.nearest} (≈ ${fmtUsd(btcFibNearestPrice)}). Nivelurile trebuie tratate ca <strong>range</strong>, nu preț fix. Următoarea zonă probabilă este în jur de ${fmtUsd(nextFibBTC)} dacă momentum-ul continuă în aceeași direcție.<br>
+    ETH: prețul este aproape de zona Fibonacci ${model.eth.fib.nearest} (≈ ${fmtUsd(ethFibNearestPrice)}). Și aici discutăm de zonă probabilă, nu target exact. Următoarea zonă posibilă este în jur de ${fmtUsd(nextFibETH)} dacă presiunea persistă.<br><br>
 
     <strong>Money flow / positioning:</strong><br>
     BTC: ${model.btc.money.fundingText} ${model.btc.money.flowText}<br>
@@ -737,6 +741,8 @@ async function init(){
     );
 
     model.global = global.data;
+    if(!Number.isFinite(btcMarket.current_price)) btcMarket.current_price = btcDaily.at(-1);
+    if(!Number.isFinite(ethMarket.current_price)) ethMarket.current_price = ethDaily.at(-1);
     model.market = {btc:btcMarket, eth:ethMarket};
     model.rel = rel;
     model.btc = computeAssetEngine('BTC', btcMarket, btcDaily, btcHourly, global.data.market_cap_percentage.btc, rel);
@@ -769,6 +775,8 @@ async function init(){
         );
 
         model.global = global.data;
+        if(!Number.isFinite(btcMarket.current_price)) btcMarket.current_price = btcDaily.at(-1);
+        if(!Number.isFinite(ethMarket.current_price)) ethMarket.current_price = ethDaily.at(-1);
         model.market = {btc:btcMarket, eth:ethMarket};
         model.rel = rel;
         model.btc = computeAssetEngine('BTC', btcMarket, btcDaily, btcHourly, global.data.market_cap_percentage.btc, rel);
