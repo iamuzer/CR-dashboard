@@ -174,29 +174,72 @@ THINK BEFORE ACT: observam, recomandam, discutam si abia apoi adaptam modelul.</
 const KEY='crypto_decision_journal_v20_final';
 let model={};
 
-const API_CACHE_KEY='crypto_dashboard_v20_cache_v1';
+const API_CACHE_KEY='crypto_dashboard_v20_cache_v2';
 
 async function fetchJsonSmart(url, label){
   const res = await fetch(url, {cache:'no-store'});
   const raw = await res.text();
-  if(!res.ok){
-    throw new Error(`${label}: HTTP ${res.status}`);
-  }
+  if(!res.ok) throw new Error(`${label}: HTTP ${res.status}`);
   try{
     return JSON.parse(raw);
   }catch(e){
     const trimmed = raw.trim().slice(0,120);
-    if(trimmed.toLowerCase().includes('throttled')){
-      throw new Error(`${label}: API throttled`);
-    }
-    throw new Error(`${label}: invalid JSON response (${trimmed})`);
+    if(trimmed.toLowerCase().includes('throttled')) throw new Error(`${label}: throttled`);
+    throw new Error(`${label}: invalid JSON (${trimmed})`);
   }
 }
-function saveApiCache(payload){
-  try{ localStorage.setItem(API_CACHE_KEY, JSON.stringify(payload)); }catch(e){}
+function saveApiCache(payload){ try{ localStorage.setItem(API_CACHE_KEY, JSON.stringify(payload)); }catch(e){} }
+function loadApiCache(){ try{ return JSON.parse(localStorage.getItem(API_CACHE_KEY)); }catch(e){ return null; } }
+
+async function loadFromCoinGecko(){
+  const [marketArr, btc365, eth365, btc7, eth7, global] = await Promise.all([
+    fetchJsonSmart('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum&price_change_percentage=24h','CoinGecko markets'),
+    fetchJsonSmart('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=365&interval=daily','CoinGecko BTC 365d'),
+    fetchJsonSmart('https://api.coingecko.com/api/v3/coins/ethereum/market_chart?vs_currency=usd&days=365&interval=daily','CoinGecko ETH 365d'),
+    fetchJsonSmart('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=7&interval=hourly','CoinGecko BTC 7d'),
+    fetchJsonSmart('https://api.coingecko.com/api/v3/coins/ethereum/market_chart?vs_currency=usd&days=7&interval=hourly','CoinGecko ETH 7d'),
+    fetchJsonSmart('https://api.coingecko.com/api/v3/global','CoinGecko global')
+  ]);
+  return {source:'CoinGecko', marketArr, btc365, eth365, btc7, eth7, global};
 }
-function loadApiCache(){
-  try{ return JSON.parse(localStorage.getItem(API_CACHE_KEY)); }catch(e){ return null; }
+
+async function loadFromCryptoCompare(){
+  const [btcPrice, ethPrice, btcDay, ethDay, btcHour, ethHour] = await Promise.all([
+    fetchJsonSmart('https://min-api.cryptocompare.com/data/pricemultifull?fsyms=BTC&tsyms=USD','CryptoCompare BTC price'),
+    fetchJsonSmart('https://min-api.cryptocompare.com/data/pricemultifull?fsyms=ETH&tsyms=USD','CryptoCompare ETH price'),
+    fetchJsonSmart('https://min-api.cryptocompare.com/data/v2/histoday?fsym=BTC&tsym=USD&limit=365','CryptoCompare BTC histoday'),
+    fetchJsonSmart('https://min-api.cryptocompare.com/data/v2/histoday?fsym=ETH&tsym=USD&limit=365','CryptoCompare ETH histoday'),
+    fetchJsonSmart('https://min-api.cryptocompare.com/data/v2/histohour?fsym=BTC&tsym=USD&limit=168','CryptoCompare BTC histohour'),
+    fetchJsonSmart('https://min-api.cryptocompare.com/data/v2/histohour?fsym=ETH&tsym=USD&limit=168','CryptoCompare ETH histohour')
+  ]);
+  const btcRaw = btcPrice.RAW?.BTC?.USD || {};
+  const ethRaw = ethPrice.RAW?.ETH?.USD || {};
+  const marketArr = [
+    {
+      id:'bitcoin',
+      current_price: btcRaw.PRICE,
+      price_change_percentage_24h: btcRaw.CHANGEPCT24HOUR ?? 0,
+      price_change_percentage_24h_in_currency: btcRaw.CHANGEPCT24HOUR ?? 0,
+      total_volume: btcRaw.TOTALVOLUME24HTO ?? 0,
+      market_cap: btcRaw.MKTCAP ?? 0
+    },
+    {
+      id:'ethereum',
+      current_price: ethRaw.PRICE,
+      price_change_percentage_24h: ethRaw.CHANGEPCT24HOUR ?? 0,
+      price_change_percentage_24h_in_currency: ethRaw.CHANGEPCT24HOUR ?? 0,
+      total_volume: ethRaw.TOTALVOLUME24HTO ?? 0,
+      market_cap: ethRaw.MKTCAP ?? 0
+    }
+  ];
+  const btc365 = {prices: (btcDay.Data?.Data || []).map(x => [x.time*1000, x.close])};
+  const eth365 = {prices: (ethDay.Data?.Data || []).map(x => [x.time*1000, x.close])};
+  const btc7 = {prices: (btcHour.Data?.Data || []).map(x => [x.time*1000, x.close])};
+  const eth7 = {prices: (ethHour.Data?.Data || []).map(x => [x.time*1000, x.close])};
+  const btcCap = btcRaw.MKTCAP || 0, ethCap = ethRaw.MKTCAP || 0;
+  const dom = (btcCap && ethCap) ? (btcCap / (btcCap + ethCap) * 100) : 55;
+  const global = {data:{market_cap_percentage:{btc:dom}}};
+  return {source:'CryptoCompare', marketArr, btc365, eth365, btc7, eth7, global};
 }
 
 
@@ -664,14 +707,18 @@ function saveReview(){
 }
 async function init(){
   try{
-    const marketArr = await fetchJsonSmart('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum&price_change_percentage=24h','coins/markets');
-    const btc365 = await fetchJsonSmart('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=365&interval=daily','bitcoin 365d');
-    const eth365 = await fetchJsonSmart('https://api.coingecko.com/api/v3/coins/ethereum/market_chart?vs_currency=usd&days=365&interval=daily','ethereum 365d');
-    const btc7 = await fetchJsonSmart('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=7&interval=hourly','bitcoin 7d');
-    const eth7 = await fetchJsonSmart('https://api.coingecko.com/api/v3/coins/ethereum/market_chart?vs_currency=usd&days=7&interval=hourly','ethereum 7d');
-    const global = await fetchJsonSmart('https://api.coingecko.com/api/v3/global','global');
+    let payload;
+    let sourceUsed = '';
+    try{
+      payload = await loadFromCoinGecko();
+      sourceUsed = 'CoinGecko';
+    }catch(primaryErr){
+      payload = await loadFromCryptoCompare();
+      sourceUsed = 'CryptoCompare';
+    }
 
-    saveApiCache({marketArr, btc365, eth365, btc7, eth7, global, cached_at:new Date().toISOString()});
+    const {marketArr, btc365, eth365, btc7, eth7, global} = payload;
+    saveApiCache({...payload, cached_at:new Date().toISOString()});
 
     const btcMarket = marketArr.find(x=>x.id==='bitcoin');
     const ethMarket = marketArr.find(x=>x.id==='ethereum');
@@ -698,12 +745,13 @@ async function init(){
 
     autoSync();
     render();
-    document.getElementById('statusBox').innerHTML += '<br><span class="small">Sursă live: CoinGecko</span>';
+    document.getElementById('syncText').textContent='Ultimul sync: ' + new Date().toLocaleString('ro-RO') + ' · sursă activă: ' + sourceUsed;
+    document.getElementById('integrityBox').innerHTML += '<br><br><strong>Fallback pe două surse:</strong> CoinGecko primar, CryptoCompare secundar. Dacă ambele cad, dashboardul încearcă și cache local.';
   } catch(e){
     const cached = loadApiCache();
     if(cached){
       try{
-        const {marketArr, btc365, eth365, btc7, eth7, global, cached_at} = cached;
+        const {marketArr, btc365, eth365, btc7, eth7, global, source, cached_at} = cached;
         const btcMarket = marketArr.find(x=>x.id==='bitcoin');
         const ethMarket = marketArr.find(x=>x.id==='ethereum');
         const btcDaily = btc365.prices.map(x=>x[1]);
@@ -729,16 +777,16 @@ async function init(){
 
         autoSync();
         render();
-        document.getElementById('syncText').textContent='Live data indisponibile: ' + e.message + ' · afișez ultimele date cache din ' + new Date(cached_at).toLocaleString('ro-RO');
-        document.getElementById('statusBox').innerHTML += '<br><span class="small">Fallback: cache local</span>';
+        document.getElementById('syncText').textContent='Live indisponibil: ' + e.message + ' · afișez cache local din ' + new Date(cached_at).toLocaleString('ro-RO') + ' · sursa cache: ' + (source || 'unknown');
+        document.getElementById('integrityBox').innerHTML += '<br><br><strong>Fallback activ:</strong> cache local.';
         return;
       }catch(cacheErr){}
     }
 
     document.getElementById('syncText').textContent='Eroare la încărcare: '+e.message;
-    const msg = `API-ul public a răspuns cu throttling sau alt răspuns non-JSON.
-Încearcă F5 / Ctrl+F5.
-După primul load reușit, dashboardul va putea folosi și cache local dacă API-ul public se blochează temporar.`;
+    const msg = `Am încercat două surse publice și apoi cache local.
+Dacă eroarea persistă, înseamnă că browserul sau rețeaua blochează cererile către ambele surse.
+Încearcă refresh sau deschide din nou pagina mai târziu.`;
     document.getElementById('summary').innerHTML = '<div class="msg">'+msg+'</div>';
     document.getElementById('confluence').innerHTML = '<div class="msg">'+msg+'</div>';
   }
