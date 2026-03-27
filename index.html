@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Crypto Dashboard V19 Plus</title>
+<title>Crypto Dashboard V19.1 Fix</title>
 <style>
 body{margin:0;background:#0b0f14;color:#e6edf3;font-family:Arial}
-.wrap{max-width:1200px;margin:auto;padding:20px}
+.wrap{max-width:1220px;margin:auto;padding:20px}
 .card{background:#111827;border:1px solid #1f2937;border-radius:12px;padding:16px;margin-bottom:14px}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 h1,h2,h3{margin:0 0 10px 0}
 .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;border:1px solid #334155}
 .safe{color:#10b981;background:rgba(16,185,129,.08)}
@@ -24,13 +25,15 @@ th,td{padding:8px;border-bottom:1px solid #334155;text-align:left;vertical-align
 .hidden{display:none}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .tab.active{border-color:#10b981;color:#10b981}
-@media (max-width:900px){.grid,.grid2{grid-template-columns:1fr}}
+.msg{padding:10px;border-radius:10px;background:#0f172a;border:1px solid #334155}
+canvas{width:100%;height:260px;background:#0f172a;border-radius:10px;border:1px solid #334155}
+@media (max-width:900px){.grid,.grid2,.grid3{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Crypto Dashboard V19 Plus</h1>
-  <div class="small" id="sync">Loading...</div>
+  <h1>Crypto Dashboard V19.1 Fix</h1>
+  <div class="small" id="sync">Se încarcă...</div>
 
   <div class="tabs">
     <button class="tab active" onclick="showTab('dash',this)">Dashboard</button>
@@ -59,7 +62,7 @@ th,td{padding:8px;border-bottom:1px solid #334155;text-align:left;vertical-align
       </div>
     </div>
 
-    <div class="grid2">
+    <div class="grid3">
       <div class="card">
         <h3>Decision Summary</h3>
         <div id="summary"></div>
@@ -68,11 +71,26 @@ th,td{padding:8px;border-bottom:1px solid #334155;text-align:left;vertical-align
         <h3>Historical Tendency</h3>
         <div id="history"></div>
       </div>
+      <div class="card">
+        <h3>System Status</h3>
+        <div id="statusBox"></div>
+      </div>
     </div>
 
     <div class="card">
       <h3>Mini Concluzie</h3>
       <div id="mini"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>BTC / ETH price (365d normalized)</h3>
+        <canvas id="priceChart" width="560" height="260"></canvas>
+      </div>
+      <div class="card">
+        <h3>RSI Daily (14)</h3>
+        <canvas id="rsiChart" width="560" height="260"></canvas>
+      </div>
     </div>
   </div>
 
@@ -128,7 +146,7 @@ THINK BEFORE ACT: patternurile genereaza recomandari, nu schimbari automate.</pr
 </div>
 
 <script>
-const KEY='crypto_decision_journal_v19_plus';
+const KEY='crypto_decision_journal_v19_1_fix';
 let model={};
 
 function showTab(id,btn){
@@ -142,7 +160,9 @@ function saveLogs(v){localStorage.setItem(KEY,JSON.stringify(v))}
 function core(r){return r>=70?'High Risk':r>=45?'Caution':'Healthy'}
 function classify(p){return p<=-3?['bearish_continuation',p<=-7?'strong':'moderate']:p>=3?['bullish_rebound',p>=7?'strong':'moderate']:['neutral_range','weak']}
 function badgeCls(state){return state==='High Risk'?'danger':state==='Caution'?'warn':'safe'}
-function closes(raw){return raw.map(x=>Number(x[4]))}
+function fmtUsd(v){return '$'+Math.round(v).toLocaleString('en-US')}
+function fmtPct(v){return (v>=0?'+':'')+Number(v).toFixed(2)+'%'}
+function closes(raw){return raw.map(x=>Number(x[1]))}
 function rsiSeries(arr,p=14){
   if(arr.length<p+1)return [];
   let g=0,l=0; for(let i=1;i<=p;i++){let d=arr[i]-arr[i-1]; if(d>=0)g+=d; else l-=d}
@@ -153,13 +173,13 @@ function rsiSeries(arr,p=14){
 }
 function ema(arr,p){let k=2/(p+1), e=arr[0]; for(let i=1;i<arr.length;i++)e=arr[i]*k+e*(1-k); return e}
 function mvrvProxy(arr){let avg=arr.reduce((a,b)=>a+b,0)/arr.length; return arr[arr.length-1]/avg}
-function riskFrom(rawClose, rawWeek, funding, dominance, symbol){
-  const d=closes(rawClose), w=closes(rawWeek), rsiD=rsiSeries(d).at(-1)||50, rsiW=rsiSeries(w).at(-1)||50;
-  const price=d.at(-1), ema200=ema(d.slice(-200),200), dist=((price-ema200)/ema200)*100, mvrv=mvrvProxy(d);
+function riskFrom(dayPrices, weeklyPrices, funding, dominance, symbol){
+  const d=dayPrices, w=weeklyPrices, rsiD=rsiSeries(d).at(-1)||50, rsiW=rsiSeries(w).at(-1)||50;
+  const price=d.at(-1), ema200=ema(d.slice(-Math.min(200,d.length)),Math.min(200,d.length)), dist=((price-ema200)/ema200)*100, mvrv=mvrvProxy(d);
   let risk=0;
   if(rsiW>70)risk+=25; else if(rsiW>60)risk+=12;
   if(dist>25)risk+=25; else if(dist>15)risk+=12;
-  if(funding>0.01)risk+=12; else if(funding<-0.01)risk-=5;
+  if(funding>0.01)risk+=8; else if(funding<-0.01)risk-=3;
   if(mvrv>2.6)risk+=18; else if(mvrv>2.0)risk+=8;
   if(rsiD<50)risk+=8;
   if(dominance>55&&symbol==='BTC')risk+=5;
@@ -209,11 +229,12 @@ function autoSync(){
   let logs=loadLogs();
   const key=lastClosedKey();
   if(logs.some(x=>x.id===`daily-${key}`)) return logs;
+  if(!model.raw.btcPrices || model.raw.btcPrices.length<3) return logs;
 
-  const btcClosed=model.raw.btcD.at(-2), btcNext=model.raw.btcD.at(-1);
-  const ethClosed=model.raw.ethD.at(-2), ethNext=model.raw.ethD.at(-1);
-  const btcPct=((Number(btcNext[4])-Number(btcClosed[4]))/Number(btcClosed[4]))*100;
-  const ethPct=((Number(ethNext[4])-Number(ethClosed[4]))/Number(ethClosed[4]))*100;
+  const btcClosed=model.raw.btcPrices.at(-2), btcNext=model.raw.btcPrices.at(-1);
+  const ethClosed=model.raw.ethPrices.at(-2), ethNext=model.raw.ethPrices.at(-1);
+  const btcPct=((btcNext-btcClosed)/btcClosed)*100;
+  const ethPct=((ethNext-ethClosed)/ethClosed)*100;
   const marketPct=(btcPct+ethPct)/2;
   const [dir,strength]=classify(marketPct);
   const autoResult = model.dec.action.toLowerCase().includes('reduce')||model.dec.action.toLowerCase().includes('sell')
@@ -256,24 +277,50 @@ function autoSync(){
   };
   logs.unshift(log); saveLogs(logs); return logs;
 }
+function drawSimple(canvasId, seriesA, seriesB, colorA, colorB, minY=null, maxY=null){
+  const c=document.getElementById(canvasId), ctx=c.getContext('2d');
+  const w=c.width, h=c.height;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#0f172a'; ctx.fillRect(0,0,w,h);
+  const all=[...seriesA,...seriesB].filter(v=>Number.isFinite(v));
+  let min=minY===null?Math.min(...all):minY, max=maxY===null?Math.max(...all):maxY;
+  if(max===min){max=min+1}
+  const pad=20;
+  function plot(series, color){
+    ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=2;
+    series.forEach((v,i)=>{
+      const x=pad + (i*(w-pad*2)/(series.length-1));
+      const y=h-pad - ((v-min)/(max-min))*(h-pad*2);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+  }
+  plot(seriesA,colorA); plot(seriesB,colorB);
+  ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.strokeRect(pad,pad,w-pad*2,h-pad*2);
+}
 function render(){
-  document.getElementById('sync').textContent='Ultimul sync: '+new Date().toLocaleString('ro-RO')+' · Binance + localStorage journal';
+  document.getElementById('sync').textContent='Ultimul sync: '+new Date().toLocaleString('ro-RO')+' · CoinGecko + localStorage journal';
   document.getElementById('btcCore').textContent=model.btc.core;
   document.getElementById('ethCore').textContent=model.eth.core;
   document.getElementById('ethRel').textContent=model.rel.state;
   document.getElementById('regime').textContent=model.rel.state==='Strength'?'Risk-on rotation':model.rel.state==='Weakness'?'Short-term caution':model.btc.core==='High Risk'||model.eth.core==='High Risk'?'Distribution / Risk-off':'Mixed';
-  document.getElementById('btcBox').innerHTML=`<span class="badge ${badgeCls(model.btc.core)}">${model.btc.core}</span><br><br><strong>${fmtUsd(model.btc.price)}</strong> <span class="${model.raw.btcT.priceChangePercent>=0?'pos':'neg'}">${fmtPct(Number(model.raw.btcT.priceChangePercent))}</span><br>RSI daily: ${model.btc.rsiD.toFixed(1)}<br>Funding: ${fmtPct(model.btc.funding)}<br>Bias: ${model.btc.shortBias}`;
-  document.getElementById('ethBox').innerHTML=`<span class="badge ${badgeCls(model.eth.core)}">${model.eth.core}</span><br><br><strong>${fmtUsd(model.eth.price)}</strong> <span class="${model.raw.ethT.priceChangePercent>=0?'pos':'neg'}">${fmtPct(Number(model.raw.ethT.priceChangePercent))}</span><br>RSI daily: ${model.eth.rsiD.toFixed(1)}<br>Funding: ${fmtPct(model.eth.funding)}<br>Bias: ${model.eth.shortBias}`;
+  document.getElementById('btcBox').innerHTML=`<span class="badge ${badgeCls(model.btc.core)}">${model.btc.core}</span><br><br><strong>${fmtUsd(model.btc.price)}</strong> <span class="${model.raw.btcChg>=0?'safe':'danger'}">${fmtPct(model.raw.btcChg)}</span><br>RSI daily: ${model.btc.rsiD.toFixed(1)}<br>Funding proxy: neutral<br>Bias: ${model.btc.shortBias}`;
+  document.getElementById('ethBox').innerHTML=`<span class="badge ${badgeCls(model.eth.core)}">${model.eth.core}</span><br><br><strong>${fmtUsd(model.eth.price)}</strong> <span class="${model.raw.ethChg>=0?'safe':'danger'}">${fmtPct(model.raw.ethChg)}</span><br>RSI daily: ${model.eth.rsiD.toFixed(1)}<br>Funding proxy: neutral<br>Bias: ${model.eth.shortBias}`;
   document.getElementById('summary').innerHTML=`<strong>${model.dec.verdict}</strong><br><br>Action: ${model.dec.action}<br>Setup: ${model.dec.setup}`;
   document.getElementById('history').innerHTML=model.dec.hist;
+  document.getElementById('statusBox').innerHTML=`Data source: <strong>CoinGecko</strong><br>Journal: <strong>localStorage</strong><br>Auto-sync: <strong>on open</strong>`;
   document.getElementById('mini').innerHTML=`Verdict scurt: <strong>${model.dec.verdict}</strong><br>Actiune: <strong>${model.dec.action}</strong><br><br>Detalii:<br>• BTC Core = ${model.btc.core}<br>• ETH Core = ${model.eth.core}<br>• ETH Relative = ${model.rel.state}<br>• RSI BTC / ETH = ${model.btc.rsiD.toFixed(1)} / ${model.eth.rsiD.toFixed(1)}<br><br>Mini concluzie:<br>${model.rel.text}`;
+
+  const btcNorm=model.raw.btcPrices.slice(-180).map(v=>v/model.raw.btcPrices.slice(-180)[0]*100);
+  const ethNorm=model.raw.ethPrices.slice(-180).map(v=>v/model.raw.ethPrices.slice(-180)[0]*100);
+  drawSimple('priceChart', btcNorm, ethNorm, '#f7931a', '#627eea');
+  drawSimple('rsiChart', model.btc.rsiSeries.slice(-120), model.eth.rsiSeries.slice(-120), '#f7931a', '#627eea', 0, 100);
 
   const logs=loadLogs();
   document.getElementById('logTotal').textContent=logs.length;
   document.getElementById('logCorrect').textContent=logs.filter(x=>x.evaluation.auto_result==='correct').length;
   document.getElementById('logPartial').textContent=logs.filter(x=>x.evaluation.auto_result==='partially_correct').length;
   document.getElementById('logWrong').textContent=logs.filter(x=>x.evaluation.auto_result==='wrong').length;
-
   document.getElementById('tableBox').innerHTML = `<table><thead><tr><th>Date</th><th>Setup</th><th>Verdict</th><th>Action</th><th>Outcome</th><th>Eval</th></tr></thead><tbody>${
     logs.map(x=>`<tr onclick="pick('${x.id}')" style="cursor:pointer"><td>${x.snapshot.day_key}</td><td>${x.snapshot.setup_type}</td><td>${x.snapshot.verdict_short}</td><td>${x.snapshot.action_plan}</td><td>${x.outcome.outcome_direction}</td><td>${x.evaluation.auto_result}</td></tr>`).join('') || '<tr><td colspan="6">No logs yet</td></tr>'
   }</tbody></table>`;
@@ -329,24 +376,40 @@ function saveReview(){
   saveLogs(logs); render(); pick(id);
 }
 async function init(){
-  const [btcT,ethT,btcD,ethD,btcW,ethW,btcF,ethF,dom] = await Promise.all([
-    fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT').then(r=>r.json()),
-    fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=ETHUSDT').then(r=>r.json()),
-    fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=260').then(r=>r.json()),
-    fetch('https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1d&limit=260').then(r=>r.json()),
-    fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1w&limit=80').then(r=>r.json()),
-    fetch('https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1w&limit=80').then(r=>r.json()),
-    fetch('https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT').then(r=>r.json()),
-    fetch('https://fapi.binance.com/fapi/v1/premiumIndex?symbol=ETHUSDT').then(r=>r.json()),
-    fetch('https://api.coingecko.com/api/v3/global').then(r=>r.json())
-  ]);
-  model.raw={btcT,ethT,btcD,ethD,btcW,ethW,btcF,ethF,dom:dom.data.market_cap_percentage.btc};
-  model.btc=riskFrom(btcD,btcW,Number(btcF.lastFundingRate)*100,model.raw.dom,'BTC');
-  model.eth=riskFrom(ethD,ethW,Number(ethF.lastFundingRate)*100,model.raw.dom,'ETH');
-  model.rel=relativeState(Number(ethT.lastPrice)/Number(btcT.lastPrice),model.raw.dom,model.eth.rsiD,model.btc.rsiD,Number(ethT.priceChangePercent),Number(btcT.priceChangePercent),model.btc.core,model.eth.core);
-  model.dec=decision(model.btc,model.eth,model.rel);
-  autoSync();
-  render();
+  try{
+    const [market, btcChart, ethChart, global] = await Promise.all([
+      fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum&price_change_percentage=24h').then(r=>r.json()),
+      fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=365&interval=daily').then(r=>r.json()),
+      fetch('https://api.coingecko.com/api/v3/coins/ethereum/market_chart?vs_currency=usd&days=365&interval=daily').then(r=>r.json()),
+      fetch('https://api.coingecko.com/api/v3/global').then(r=>r.json())
+    ]);
+
+    const btcM=market.find(x=>x.id==='bitcoin'), ethM=market.find(x=>x.id==='ethereum');
+    const btcPrices=btcChart.prices.map(x=>x[1]);
+    const ethPrices=ethChart.prices.map(x=>x[1]);
+
+    model.raw={
+      dom: global.data.market_cap_percentage.btc,
+      btcPrices, ethPrices,
+      btcChg: btcM.price_change_percentage_24h_in_currency ?? btcM.price_change_percentage_24h ?? 0,
+      ethChg: ethM.price_change_percentage_24h_in_currency ?? ethM.price_change_percentage_24h ?? 0
+    };
+    model.btc=riskFrom(btcPrices, btcPrices.filter((_,i)=>i%7===0), 0, model.raw.dom, 'BTC');
+    model.eth=riskFrom(ethPrices, ethPrices.filter((_,i)=>i%7===0), 0, model.raw.dom, 'ETH');
+    model.btc.price=btcM.current_price;
+    model.eth.price=ethM.current_price;
+    model.btc.funding=0;
+    model.eth.funding=0;
+    model.btc.rsiSeries=rsiSeries(btcPrices);
+    model.eth.rsiSeries=rsiSeries(ethPrices);
+    model.rel=relativeState(ethM.current_price/btcM.current_price, model.raw.dom, model.eth.rsiD, model.btc.rsiD, model.raw.ethChg, model.raw.btcChg, model.btc.core, model.eth.core);
+    model.dec=decision(model.btc,model.eth,model.rel);
+    autoSync();
+    render();
+  } catch(e){
+    document.getElementById('sync').textContent='Eroare la incarcare: '+e.message;
+    document.getElementById('statusBox').innerHTML='<div class="msg">Cel mai probabil sursa de date a blocat requestul sau a raspuns prea lent. Reincarca pagina peste cateva secunde.</div>';
+  }
 }
 init();
 </script>
