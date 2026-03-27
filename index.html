@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Crypto Dashboard V19.1 Fix</title>
+<title>Crypto Dashboard V19.2 Fix</title>
 <style>
 body{margin:0;background:#0b0f14;color:#e6edf3;font-family:Arial}
-.wrap{max-width:1220px;margin:auto;padding:20px}
+.wrap{max-width:1280px;margin:auto;padding:20px}
 .card{background:#111827;border:1px solid #1f2937;border-radius:12px;padding:16px;margin-bottom:14px}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -32,7 +32,7 @@ canvas{width:100%;height:260px;background:#0f172a;border-radius:10px;border:1px 
 </head>
 <body>
 <div class="wrap">
-  <h1>Crypto Dashboard V19.1 Fix</h1>
+  <h1>Crypto Dashboard V19.2 Fix</h1>
   <div class="small" id="sync">Se încarcă...</div>
 
   <div class="tabs">
@@ -59,6 +59,17 @@ canvas{width:100%;height:260px;background:#0f172a;border-radius:10px;border:1px 
       <div class="card">
         <h3>ETH</h3>
         <div id="ethBox"></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>BTC — Short term / Long term</h3>
+        <div id="btcSTLT"></div>
+      </div>
+      <div class="card">
+        <h3>ETH — Short term / Long term</h3>
+        <div id="ethSTLT"></div>
       </div>
     </div>
 
@@ -146,7 +157,7 @@ THINK BEFORE ACT: patternurile genereaza recomandari, nu schimbari automate.</pr
 </div>
 
 <script>
-const KEY='crypto_decision_journal_v19_1_fix';
+const KEY='crypto_decision_journal_v19_2_fix';
 let model={};
 
 function showTab(id,btn){
@@ -162,7 +173,6 @@ function classify(p){return p<=-3?['bearish_continuation',p<=-7?'strong':'modera
 function badgeCls(state){return state==='High Risk'?'danger':state==='Caution'?'warn':'safe'}
 function fmtUsd(v){return '$'+Math.round(v).toLocaleString('en-US')}
 function fmtPct(v){return (v>=0?'+':'')+Number(v).toFixed(2)+'%'}
-function closes(raw){return raw.map(x=>Number(x[1]))}
 function rsiSeries(arr,p=14){
   if(arr.length<p+1)return [];
   let g=0,l=0; for(let i=1;i<=p;i++){let d=arr[i]-arr[i-1]; if(d>=0)g+=d; else l-=d}
@@ -173,19 +183,22 @@ function rsiSeries(arr,p=14){
 }
 function ema(arr,p){let k=2/(p+1), e=arr[0]; for(let i=1;i<arr.length;i++)e=arr[i]*k+e*(1-k); return e}
 function mvrvProxy(arr){let avg=arr.reduce((a,b)=>a+b,0)/arr.length; return arr[arr.length-1]/avg}
-function riskFrom(dayPrices, weeklyPrices, funding, dominance, symbol){
-  const d=dayPrices, w=weeklyPrices, rsiD=rsiSeries(d).at(-1)||50, rsiW=rsiSeries(w).at(-1)||50;
-  const price=d.at(-1), ema200=ema(d.slice(-Math.min(200,d.length)),Math.min(200,d.length)), dist=((price-ema200)/ema200)*100, mvrv=mvrvProxy(d);
+function weeklyFromDaily(arr){ return arr.filter((_,i)=>i%7===0); }
+function riskFrom(dayPrices, weeklyPrices, dominance, symbol){
+  const rsiDSeries=rsiSeries(dayPrices);
+  const rsiWSeries=rsiSeries(weeklyPrices);
+  const rsiD=rsiDSeries.at(-1)||50, rsiW=rsiWSeries.at(-1)||50;
+  const price=dayPrices.at(-1), ema200=ema(dayPrices.slice(-Math.min(200,dayPrices.length)),Math.min(200,dayPrices.length));
+  const dist=((price-ema200)/ema200)*100, mvrv=mvrvProxy(dayPrices);
   let risk=0;
   if(rsiW>70)risk+=25; else if(rsiW>60)risk+=12;
   if(dist>25)risk+=25; else if(dist>15)risk+=12;
-  if(funding>0.01)risk+=8; else if(funding<-0.01)risk-=3;
   if(mvrv>2.6)risk+=18; else if(mvrv>2.0)risk+=8;
   if(rsiD<50)risk+=8;
   if(dominance>55&&symbol==='BTC')risk+=5;
   risk=Math.max(0,Math.min(100,Math.round(risk)));
-  const shortBias = (rsiD<45||dist<0)?'Bearish':(rsiD>55&&dist>0?'Bullish':'Neutral');
-  return {risk, core:core(risk), rsiD, rsiW, dist, mvrv, shortBias, price, closes:d};
+  const shortBias=(rsiD<45||dist<0)?'Bearish':(rsiD>55&&dist>0?'Bullish':'Neutral');
+  return {risk, core:core(risk), rsiD, rsiW, dist, mvrv, shortBias, price, rsiDSeries};
 }
 function decision(btc,eth,rel){
   let setup='Neutral / Consolidation', verdict='⚪ Neutral', action='Wait', hist='Piata este mixta si edge-ul directional este redus.';
@@ -250,7 +263,9 @@ function autoSync(){
       confidence:model.btc.core==='High Risk'||model.eth.core==='High Risk'?'High':model.btc.core==='Caution'||model.eth.core==='Caution'?'Medium':'Low',
       rationale_factors:[
         `BTC RSI daily ${model.btc.rsiD.toFixed(1)}`,
+        `BTC RSI weekly ${model.btc.rsiW.toFixed(1)}`,
         `ETH RSI daily ${model.eth.rsiD.toFixed(1)}`,
+        `ETH RSI weekly ${model.eth.rsiW.toFixed(1)}`,
         `ETH Relative ${model.rel.state}`,
         `BTC dominance ${model.raw.dom.toFixed(1)}%`
       ]
@@ -304,17 +319,21 @@ function render(){
   document.getElementById('ethCore').textContent=model.eth.core;
   document.getElementById('ethRel').textContent=model.rel.state;
   document.getElementById('regime').textContent=model.rel.state==='Strength'?'Risk-on rotation':model.rel.state==='Weakness'?'Short-term caution':model.btc.core==='High Risk'||model.eth.core==='High Risk'?'Distribution / Risk-off':'Mixed';
-  document.getElementById('btcBox').innerHTML=`<span class="badge ${badgeCls(model.btc.core)}">${model.btc.core}</span><br><br><strong>${fmtUsd(model.btc.price)}</strong> <span class="${model.raw.btcChg>=0?'safe':'danger'}">${fmtPct(model.raw.btcChg)}</span><br>RSI daily: ${model.btc.rsiD.toFixed(1)}<br>Funding proxy: neutral<br>Bias: ${model.btc.shortBias}`;
-  document.getElementById('ethBox').innerHTML=`<span class="badge ${badgeCls(model.eth.core)}">${model.eth.core}</span><br><br><strong>${fmtUsd(model.eth.price)}</strong> <span class="${model.raw.ethChg>=0?'safe':'danger'}">${fmtPct(model.raw.ethChg)}</span><br>RSI daily: ${model.eth.rsiD.toFixed(1)}<br>Funding proxy: neutral<br>Bias: ${model.eth.shortBias}`;
+  document.getElementById('btcBox').innerHTML=`<span class="badge ${badgeCls(model.btc.core)}">${model.btc.core}</span><br><br><strong>${fmtUsd(model.btc.price)}</strong> <span class="${model.raw.btcChg>=0?'safe':'danger'}">${fmtPct(model.raw.btcChg)}</span><br>RSI daily: ${model.btc.rsiD.toFixed(1)}<br>RSI weekly: ${model.btc.rsiW.toFixed(1)}<br>Bias: ${model.btc.shortBias}`;
+  document.getElementById('ethBox').innerHTML=`<span class="badge ${badgeCls(model.eth.core)}">${model.eth.core}</span><br><br><strong>${fmtUsd(model.eth.price)}</strong> <span class="${model.raw.ethChg>=0?'safe':'danger'}">${fmtPct(model.raw.ethChg)}</span><br>RSI daily: ${model.eth.rsiD.toFixed(1)}<br>RSI weekly: ${model.eth.rsiW.toFixed(1)}<br>Bias: ${model.eth.shortBias}`;
+
+  document.getElementById('btcSTLT').innerHTML=`<strong>Short term:</strong> ${model.btc.shortBias} · RSI daily ${model.btc.rsiD.toFixed(1)}<br><strong>Long term:</strong> ${model.btc.core} · RSI weekly ${model.btc.rsiW.toFixed(1)}<br><br>${model.btc.rsiD<50?'Momentum-ul pe termen scurt slabeste.':'Momentum-ul scurt nu e deteriorat sever.'}`;
+  document.getElementById('ethSTLT').innerHTML=`<strong>Short term:</strong> ${model.eth.shortBias} · RSI daily ${model.eth.rsiD.toFixed(1)}<br><strong>Long term:</strong> ${model.eth.core} · RSI weekly ${model.eth.rsiW.toFixed(1)}<br><br>${model.eth.rsiD<50?'ETH arata slabiciune pe termen scurt.':'ETH nu este intr-o deteriorare severa pe termen scurt.'}`;
+
   document.getElementById('summary').innerHTML=`<strong>${model.dec.verdict}</strong><br><br>Action: ${model.dec.action}<br>Setup: ${model.dec.setup}`;
   document.getElementById('history').innerHTML=model.dec.hist;
   document.getElementById('statusBox').innerHTML=`Data source: <strong>CoinGecko</strong><br>Journal: <strong>localStorage</strong><br>Auto-sync: <strong>on open</strong>`;
-  document.getElementById('mini').innerHTML=`Verdict scurt: <strong>${model.dec.verdict}</strong><br>Actiune: <strong>${model.dec.action}</strong><br><br>Detalii:<br>• BTC Core = ${model.btc.core}<br>• ETH Core = ${model.eth.core}<br>• ETH Relative = ${model.rel.state}<br>• RSI BTC / ETH = ${model.btc.rsiD.toFixed(1)} / ${model.eth.rsiD.toFixed(1)}<br><br>Mini concluzie:<br>${model.rel.text}`;
+  document.getElementById('mini').innerHTML=`Verdict scurt: <strong>${model.dec.verdict}</strong><br>Actiune: <strong>${model.dec.action}</strong><br><br>Detalii:<br>• BTC Core = ${model.btc.core}<br>• ETH Core = ${model.eth.core}<br>• ETH Relative = ${model.rel.state}<br>• RSI BTC daily / weekly = ${model.btc.rsiD.toFixed(1)} / ${model.btc.rsiW.toFixed(1)}<br>• RSI ETH daily / weekly = ${model.eth.rsiD.toFixed(1)} / ${model.eth.rsiW.toFixed(1)}<br><br>Mini concluzie:<br>${model.rel.text}`;
 
   const btcNorm=model.raw.btcPrices.slice(-180).map(v=>v/model.raw.btcPrices.slice(-180)[0]*100);
   const ethNorm=model.raw.ethPrices.slice(-180).map(v=>v/model.raw.ethPrices.slice(-180)[0]*100);
   drawSimple('priceChart', btcNorm, ethNorm, '#f7931a', '#627eea');
-  drawSimple('rsiChart', model.btc.rsiSeries.slice(-120), model.eth.rsiSeries.slice(-120), '#f7931a', '#627eea', 0, 100);
+  drawSimple('rsiChart', model.btc.rsiDSeries.slice(-120), model.eth.rsiDSeries.slice(-120), '#f7931a', '#627eea', 0, 100);
 
   const logs=loadLogs();
   document.getElementById('logTotal').textContent=logs.length;
@@ -387,6 +406,8 @@ async function init(){
     const btcM=market.find(x=>x.id==='bitcoin'), ethM=market.find(x=>x.id==='ethereum');
     const btcPrices=btcChart.prices.map(x=>x[1]);
     const ethPrices=ethChart.prices.map(x=>x[1]);
+    const btcWeekly=weeklyFromDaily(btcPrices);
+    const ethWeekly=weeklyFromDaily(ethPrices);
 
     model.raw={
       dom: global.data.market_cap_percentage.btc,
@@ -394,21 +415,17 @@ async function init(){
       btcChg: btcM.price_change_percentage_24h_in_currency ?? btcM.price_change_percentage_24h ?? 0,
       ethChg: ethM.price_change_percentage_24h_in_currency ?? ethM.price_change_percentage_24h ?? 0
     };
-    model.btc=riskFrom(btcPrices, btcPrices.filter((_,i)=>i%7===0), 0, model.raw.dom, 'BTC');
-    model.eth=riskFrom(ethPrices, ethPrices.filter((_,i)=>i%7===0), 0, model.raw.dom, 'ETH');
+    model.btc=riskFrom(btcPrices, btcWeekly, model.raw.dom, 'BTC');
+    model.eth=riskFrom(ethPrices, ethWeekly, model.raw.dom, 'ETH');
     model.btc.price=btcM.current_price;
     model.eth.price=ethM.current_price;
-    model.btc.funding=0;
-    model.eth.funding=0;
-    model.btc.rsiSeries=rsiSeries(btcPrices);
-    model.eth.rsiSeries=rsiSeries(ethPrices);
     model.rel=relativeState(ethM.current_price/btcM.current_price, model.raw.dom, model.eth.rsiD, model.btc.rsiD, model.raw.ethChg, model.raw.btcChg, model.btc.core, model.eth.core);
     model.dec=decision(model.btc,model.eth,model.rel);
     autoSync();
     render();
   } catch(e){
     document.getElementById('sync').textContent='Eroare la incarcare: '+e.message;
-    document.getElementById('statusBox').innerHTML='<div class="msg">Cel mai probabil sursa de date a blocat requestul sau a raspuns prea lent. Reincarca pagina peste cateva secunde.</div>';
+    document.getElementById('statusBox').innerHTML='<div class="msg">Sursa publica a blocat requestul sau a raspuns prea lent. Reincarca pagina peste cateva secunde.</div>';
   }
 }
 init();
