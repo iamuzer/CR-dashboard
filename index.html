@@ -42,7 +42,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 <h1>CryptoRisk v5 — Backtest Q1 2026</h1>
 <div class="sub">
   Simulare logică dashboard pe date reale Binance · Ianuarie – Martie 2026 (~90 zile)<br>
-  Fix-uri față de versiunea anterioară: RSI 1W calculat corect per zi · ETH Relative din ratio zilnic real · Evaluare T+1, T+3, T+7
+  v2 — Ajustări: contextBear strict (în nor ≠ bearish) · Crash Exhaustion Detector (drop>10% + RSI<25 + F&G<20) · Context Neclar explicit
 </div>
 
 <button class="btn" id="runBtn" onclick="run()">▶ Rulează Backtestul Q1 2026</button>
@@ -219,9 +219,17 @@ function analyzeDay(dayIdx, allBtcDaily, allEthDaily, allBtcWeekly, btcFundingMa
   // ══════════════════════════════════════════
 
   // NIVEL 1 — Context (Bias structural)
+  // AJUSTARE 1: "în nor" (score=2) + sub EMA200 = CONTEXT NECLAR, nu bearish confirmat
+  // Bearish confirmat = sub nor (score<=1) SAU (sub EMA200 + sub nor confirmed)
+  // "în nor" singur sau cu EMA200 negativ = incertitudine structurală
   const ichiScore  = ichi?.bullCount ?? 2;
-  const contextBear = ichiScore <= 1 || ema200Dist < 0;
-  const contextBull = ichiScore >= 3 && ema200Dist > 0;
+  const ichiSubNor  = ichiScore <= 1;           // sub nor = bearish structural
+  const ichiInNor   = ichiScore === 2;           // în nor = incertitudine
+  const ichiDeaupra = ichiScore >= 3;            // deasupra = bullish structural
+  const contextBear = ichiSubNor || (ema200Dist < -5 && ichiScore <= 1);
+  // "în nor" + EMA200 negativ = context NECLAR (nu bearish, nu bullish)
+  const contextNeclar = ichiInNor && !contextBear;
+  const contextBull = ichiDeaupra && ema200Dist > 0;
 
   // NIVEL 2 — Confirmation
   // eth_state = WEAKNESS/NEUTRU/STRENGTH
@@ -268,6 +276,14 @@ function analyzeDay(dayIdx, allBtcDaily, allEthDaily, allBtcWeekly, btcFundingMa
   const rsiNeutral = rsiD>42&&rsiD<58;
   const noTrade = emaFlat && rsiNeutral && ethState==='NEUTRU';
 
+  // AJUSTARE 2: Crash Exhaustion Detector
+  // Dacă în ultimele 5 zile BTC a căzut >10% ȘI RSI 1D < 25 ȘI F&G < 20
+  // → semnalul bearish este probabil epuizat → downgrade la SETUP BEAR + warning
+  const drop5d = btcD.length >= 6
+    ? (btcD[btcD.length-1].close - btcD[btcD.length-6].close) / btcD[btcD.length-6].close * 100
+    : 0;
+  const crashExhaustion = drop5d < -10 && rsiD < 25 && fg < 20;
+
   // Extension / Valuation
   const overextended = ema200Dist > 20;
   const confidencePenalty = Math.min(0.20, overextended?0.20:0);
@@ -283,13 +299,25 @@ function analyzeDay(dayIdx, allBtcDaily, allEthDaily, allBtcWeekly, btcFundingMa
     if(confState==='Contradicting') {
       alertState='◈ BIAS BEAR (contradicție)'; alertColor='warn';
     } else if(triggerBear) {
-      if(fuelBear && confState==='Aligned') {
+      if(crashExhaustion) {
+        // AJUSTARE 2: downgrade din SEMNAL BEAR ACTIV la SETUP BEAR
+        alertState='⚠ EPUIZARE POST-CRASH — bounce posibil'; alertColor='warn';
+      } else if(fuelBear && confState==='Aligned') {
         alertState='🔴 SEMNAL BEAR ACTIV'; alertColor='danger';
       } else {
         alertState='⚠ SETUP BEAR FORMARE'; alertColor='warn';
       }
     } else {
       alertState='◈ BIAS BEARISH'; alertColor='warn';
+    }
+  } else if(contextNeclar) {
+    // AJUSTARE 1: în nor + sub EMA200 = context neclar explicit
+    if(triggerBear && fuelBear) {
+      alertState='⚠ SETUP BEAR (context neclar)'; alertColor='warn';
+    } else if(triggerBull) {
+      alertState='↗ RECOVERY (context neclar)'; alertColor='purple';
+    } else {
+      alertState='◈ CONTEXT NECLAR'; alertColor='neutral';
     }
   } else if(contextBull) {
     if(confState==='Contradicting_Bull') {
@@ -321,6 +349,8 @@ function analyzeDay(dayIdx, allBtcDaily, allEthDaily, allBtcWeekly, btcFundingMa
     confidencePenalty: Math.round(confidencePenalty*100),
     noTrade, fg, btcFunding,
     stackBull, stackBear, macdBull,
+    crashExhaustion, drop5d: +drop5d.toFixed(1),
+    contextNeclar,
   };
 }
 
@@ -470,9 +500,10 @@ function renderResults(rows) {
     'SEMNAL BULL':rows.filter(r=>r.alertState.includes('SEMNAL BULL')).length,
     'SETUP BEAR':rows.filter(r=>r.alertState.includes('SETUP BEAR')).length,
     'SETUP BULL':rows.filter(r=>r.alertState.includes('SETUP BULL')).length,
+    'EPUIZARE POST-CRASH':rows.filter(r=>r.alertState.includes('EPUIZARE')).length,
     'BIAS BEAR':rows.filter(r=>r.alertState.includes('BIAS BEAR')).length,
     'BIAS BULL':rows.filter(r=>r.alertState.includes('BIAS BULL')).length,
-    'COUNTER-TREND':rows.filter(r=>r.alertState.includes('COUNTER')).length,
+    'COUNTER-TREND':rows.filter(r=>r.alertState.includes('COUNTER')||r.alertState.includes('RECOVERY')).length,
     'CONSOLIDARE':rows.filter(r=>r.alertState.includes('CONSOLIDARE')).length,
     'CONTEXT NECLAR':rows.filter(r=>r.alertState.includes('NECLAR')).length,
   };
@@ -563,7 +594,7 @@ function renderTable(rows) {
     <thead><tr>
       <th>Data</th><th>BTC</th><th>Δ Zi</th>
       <th>RSI 1D</th><th>RSI 1W</th><th>EMA200</th>
-      <th>Ichimoku</th><th>ETH Rel.</th><th>F&G</th>
+      <th>Ichimoku</th><th>ETH Rel.</th><th>F&G</th><th>Δ 5D</th>
       <th>Alert State</th>
       <th>T+1</th><th>Eval T+1</th>
       <th>T+3</th><th>Eval T+3</th>
@@ -586,7 +617,9 @@ function renderTable(rows) {
         <td class="${ema200C}">${r.ema200Dist}%${penStr}</td>
         <td class="${ichiC}">${ichiS}</td>
         <td class="${ethC}">${r.ethState}<br><span style="font-size:.54rem;color:var(--neutral)">${r.ethRatioChg}% ratio</span></td>
+        <td class="${r.crashExhaustion?'warn':r.drop5d<-5?'danger':r.drop5d>5?'safe':'neutral'}">${r.drop5d}%${r.crashExhaustion?' ⚡':''}</td>
         <td class="${fgC}">${r.fg}</td>
+        <td class="${r.crashExhaustion?'warn':r.drop5d<-5?'danger':r.drop5d>5?'safe':'neutral'}">${r.drop5d}%${r.crashExhaustion?' ⚡':''}</td>
         <td><span class="pill ${pillC(r.alertColor)}">${r.alertState}</span></td>
         <td class="${r.chgT1===null?'neutral':r.chgT1>2?'safe':r.chgT1<-2?'danger':'warn'}">${fmtP(r.chgT1)}</td>
         <td class="${r.evalT1.color}">${r.evalT1.result}</td>
