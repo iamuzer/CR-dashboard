@@ -3,55 +3,61 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CryptoRisk — Backtest Martie 2026</title>
+<title>CryptoRisk — Backtest Q1 2026</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#070b0f;--panel:#0c1118;--border:#172030;--safe:#00e87a;--warn:#ffb300;--danger:#ff3355;--neutral:#4a6080;--text:#b8cde0;--white:#e8f0f8}
-body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;padding:20px}
+body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;padding:20px;font-size:.75rem}
 h1{color:var(--safe);font-size:1.1rem;margin-bottom:4px}
-.sub{color:var(--neutral);font-size:.7rem;margin-bottom:20px}
-.btn{background:transparent;border:1px solid var(--safe);color:var(--safe);padding:10px 24px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:.8rem;margin-bottom:20px}
-.btn:hover{background:rgba(0,232,122,.08)}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-#log{font-size:.68rem;color:var(--neutral);margin-bottom:16px;min-height:20px}
-table{width:100%;border-collapse:collapse;font-size:.66rem}
-th{background:#0c1118;color:var(--neutral);padding:7px 8px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
-td{padding:6px 8px;border-bottom:1px solid #0a1520;vertical-align:top}
+.sub{color:var(--neutral);font-size:.68rem;margin-bottom:20px;line-height:1.6}
+.btn{background:transparent;border:1px solid var(--safe);color:var(--safe);padding:10px 24px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:.78rem;margin-bottom:20px}
+.btn:hover{background:rgba(0,232,122,.08)} .btn:disabled{opacity:.4;cursor:not-allowed}
+#log{font-size:.66rem;color:var(--neutral);margin-bottom:16px;min-height:20px}
+.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:16px 0}
+.summary3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center}
+.stat-val{font-size:1.4rem;font-weight:700;margin-bottom:3px}
+.stat-lbl{font-size:.56rem;color:var(--neutral)}
+.section-title{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--neutral);margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.62rem}
+th{background:#0c1118;color:var(--neutral);padding:6px 7px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;font-size:.58rem}
+td{padding:5px 7px;border-bottom:1px solid #0a1520;vertical-align:middle;white-space:nowrap}
 tr:hover td{background:rgba(255,255,255,.02)}
 .safe{color:var(--safe)} .warn{color:var(--warn)} .danger{color:var(--danger)} .neutral{color:var(--neutral)}
-.pill{display:inline-block;padding:2px 7px;border-radius:3px;font-size:.6rem;font-weight:700}
-.pill-safe{background:rgba(0,232,122,.12);color:var(--safe);border:1px solid rgba(0,232,122,.25)}
-.pill-warn{background:rgba(255,179,0,.12);color:var(--warn);border:1px solid rgba(255,179,0,.25)}
-.pill-danger{background:rgba(255,51,85,.12);color:var(--danger);border:1px solid rgba(255,51,85,.25)}
-.pill-neutral{background:rgba(74,96,128,.12);color:var(--neutral);border:1px solid rgba(74,96,128,.25)}
-.pill-purple{background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,250,.25)}
-.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:20px 0}
-.stat{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center}
-.stat-val{font-size:1.6rem;font-weight:700;margin-bottom:4px}
-.stat-lbl{font-size:.58rem;color:var(--neutral)}
-.section-title{font-size:.62rem;letter-spacing:.15em;text-transform:uppercase;color:var(--neutral);margin:20px 0 10px}
-.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.62rem;margin-bottom:16px}
-.leg-item{display:flex;align-items:center;gap:5px}
-.leg-dot{width:8px;height:8px;border-radius:50%}
+.pill{display:inline-block;padding:2px 6px;border-radius:3px;font-size:.56rem;font-weight:700}
+.pill-safe{background:rgba(0,232,122,.12);color:var(--safe);border:1px solid rgba(0,232,122,.2)}
+.pill-warn{background:rgba(255,179,0,.12);color:var(--warn);border:1px solid rgba(255,179,0,.2)}
+.pill-danger{background:rgba(255,51,85,.12);color:var(--danger);border:1px solid rgba(255,51,85,.2)}
+.pill-neutral{background:rgba(74,96,128,.12);color:var(--neutral);border:1px solid rgba(74,96,128,.2)}
+.pill-purple{background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,250,.2)}
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border)}
+.tab{padding:7px 16px;cursor:pointer;font-size:.66rem;color:var(--neutral);border-bottom:2px solid transparent}
+.tab.active{color:var(--safe);border-bottom-color:var(--safe)}
+.tab-content{display:none} .tab-content.active{display:block}
+.insight{background:var(--panel);border:1px solid var(--border);border-left:3px solid;border-radius:8px;padding:12px 16px;margin-bottom:10px;line-height:1.7;font-size:.68rem}
+.insight-safe{border-left-color:var(--safe)} .insight-warn{border-left-color:var(--warn)} .insight-danger{border-left-color:var(--danger)}
 </style>
 </head>
 <body>
-<h1>CryptoRisk v5 — Backtest Martie 2026</h1>
-<div class="sub">Simulare logică dashboard pe date reale Binance · 1 Martie – 28 Martie 2026</div>
+<h1>CryptoRisk v5 — Backtest Q1 2026</h1>
+<div class="sub">
+  Simulare logică dashboard pe date reale Binance · Ianuarie – Martie 2026 (~90 zile)<br>
+  Fix-uri față de versiunea anterioară: RSI 1W calculat corect per zi · ETH Relative din ratio zilnic real · Evaluare T+1, T+3, T+7
+</div>
 
-<button class="btn" id="runBtn" onclick="run()">▶ Rulează Backtestul</button>
-<div id="log">Apasă butonul pentru a încărca datele și rula backtestul...</div>
+<button class="btn" id="runBtn" onclick="run()">▶ Rulează Backtestul Q1 2026</button>
+<div id="log">Apasă butonul pentru a încărca datele din Binance și rula backtestul...</div>
 <div id="results"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════
-// MATH — same logic as dashboard
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
+// MATH — identical to dashboard
+// ═══════════════════════════════════════════════════
 function calcRSI(closes, period=14) {
-  if(closes.length < period+1) return null;
-  let gA=0, lA=0;
-  for(let i=1;i<=period;i++){const d=closes[i]-closes[i-1]; if(d>0) gA+=d; else lA+=Math.abs(d);}
-  gA/=period; lA/=period;
+  if(!closes||closes.length<period+2) return null;
+  let gA=0,lA=0;
+  for(let i=1;i<=period;i++){const d=closes[i]-closes[i-1];if(d>0)gA+=d;else lA+=Math.abs(d);}
+  gA/=period;lA/=period;
   const arr=[];
   arr.push(lA===0?100:gA===0?0:100-(100/(1+gA/lA)));
   for(let i=period+1;i<closes.length;i++){
@@ -63,450 +69,541 @@ function calcRSI(closes, period=14) {
   return arr;
 }
 
-function calcEMA(closes, period) {
-  if(closes.length < period) return null;
+function calcEMAArr(closes, period) {
+  if(!closes||closes.length<period) return null;
   const k=2/(period+1);
   let ema=closes.slice(0,period).reduce((a,b)=>a+b,0)/period;
-  for(let i=period;i<closes.length;i++) ema=closes[i]*k+ema*(1-k);
-  return ema;
+  const arr=[ema];
+  for(let i=period;i<closes.length;i++){ema=closes[i]*k+ema*(1-k);arr.push(ema);}
+  return arr;
+}
+function calcEMALast(closes, period) {
+  const arr=calcEMAArr(closes,period);
+  return arr?arr[arr.length-1]:null;
 }
 
-function calcMACD(closes, fast=12, slow=26, signal=9) {
-  if(closes.length < slow+signal+5) return null;
+function calcMACD(closes,fast=12,slow=26,signal=9){
+  if(!closes||closes.length<slow+signal+5) return null;
   const ema=(c,p)=>{const k=2/(p+1);let e=c.slice(0,p).reduce((a,b)=>a+b,0)/p;for(let i=p;i<c.length;i++)e=c[i]*k+e*(1-k);return e;};
   const macdArr=[];
   for(let i=slow-1;i<closes.length;i++) macdArr.push(ema(closes.slice(0,i+1),fast)-ema(closes.slice(0,i+1),slow));
   const k=2/(signal+1);let sig=macdArr.slice(0,signal).reduce((a,b)=>a+b,0)/signal;
   const sigArr=[sig];
   for(let i=signal;i<macdArr.length;i++){sig=macdArr[i]*k+sig*(1-k);sigArr.push(sig);}
-  const n=sigArr.length, macdLine=macdArr[macdArr.length-1], signalLine=sigArr[n-1];
-  const hist=macdLine-signalLine, prevHist=macdArr[macdArr.length-2]-sigArr[n-2];
+  const n=sigArr.length,macdLine=macdArr[macdArr.length-1],signalLine=sigArr[n-1];
+  const hist=macdLine-signalLine,prevHist=n>1?macdArr[macdArr.length-2]-sigArr[n-2]:0;
   return{macdLine,signalLine,hist,bullish:macdLine>signalLine,crossup:hist>0&&prevHist<=0,crossdown:hist<0&&prevHist>=0};
 }
 
-function calcIchimoku(candles) {
-  if(candles.length<27) return null;
+function calcIchimoku(candles){
+  if(!candles||candles.length<27) return null;
   const n=candles.length;
   const hN=(e,k)=>Math.max(...candles.slice(Math.max(0,e-k+1),e+1).map(x=>x.high));
   const lN=(e,k)=>Math.min(...candles.slice(Math.max(0,e-k+1),e+1).map(x=>x.low));
-  const tenkan=(hN(n-1,9)+lN(n-1,9))/2, kijun=(hN(n-1,26)+lN(n-1,26))/2;
+  const tenkan=(hN(n-1,9)+lN(n-1,9))/2,kijun=(hN(n-1,26)+lN(n-1,26))/2;
   const i26=n-27;
   let sA,sB;
-  if(i26>=26){const t26=(hN(i26,9)+lN(i26,9))/2,k26=(hN(i26,26)+lN(i26,26))/2;sA=(t26+k26)/2;sB=(hN(i26,Math.min(52,i26+1))+lN(i26,Math.min(52,i26+1)))/2;}
+  if(i26>=0){const t26=(hN(i26,9)+lN(i26,9))/2,k26=(hN(i26,26)+lN(i26,26))/2;sA=(t26+k26)/2;sB=(hN(i26,Math.min(52,i26+1))+lN(i26,Math.min(52,i26+1)))/2;}
   else{sA=(tenkan+kijun)/2;sB=(hN(n-1,Math.min(52,n))+lN(n-1,Math.min(52,n)))/2;}
   const price=candles[n-1].close;
   const cTop=Math.max(sA,sB),cBot=Math.min(sA,sB);
-  const above=price>cTop, below=price<cBot, tkBull=tenkan>kijun;
-  const bullCount=[above,tkBull,candles[n-1].close>candles[Math.max(0,n-27)].close,(sA>sB)].filter(Boolean).length;
-  return{above,below,tkBull,bullCount,cTop,cBot,kijun};
+  const above=price>cTop,below=price<cBot,tkBull=tenkan>kijun;
+  const chikouAbove=price>candles[Math.max(0,n-27)].close;
+  const bullCount=[above,tkBull,chikouAbove,(sA>sB)].filter(Boolean).length;
+  return{above,below,tkBull,bullCount,cTop,cBot,kijun,tenkan};
 }
 
-function swingHigh(closes, lookback=5) {
-  for(let i=closes.length-lookback-1;i>=lookback;i--){
-    const left=closes.slice(i-lookback,i), right=closes.slice(i+1,i+lookback+1);
-    if(right.length<lookback) continue;
-    if(closes[i]>Math.max(...left)&&closes[i]>Math.max(...right)) return{price:closes[i],barsAgo:closes.length-1-i};
-  }
-  return null;
-}
-function swingLow(closes, lookback=5) {
-  for(let i=closes.length-lookback-1;i>=lookback;i--){
-    const left=closes.slice(i-lookback,i), right=closes.slice(i+1,i+lookback+1);
-    if(right.length<lookback) continue;
-    if(closes[i]<Math.min(...left)&&closes[i]<Math.min(...right)) return{price:closes[i],barsAgo:closes.length-1-i};
-  }
-  return null;
+// ═══════════════════════════════════════════════════
+// WEEKLY RSI — correct per day
+// Find which weekly candle corresponds to this daily date
+// ═══════════════════════════════════════════════════
+function getWeeklyClosesUpToDate(weeklyCandles, dateStr) {
+  const d = new Date(dateStr);
+  // Include weekly candle if its open time is before or on this date
+  const filtered = weeklyCandles.filter(w => new Date(w.ts) <= d);
+  return filtered.map(w => w.close);
 }
 
-// ═══════════════════════════════════════════════════════
-// DASHBOARD LOGIC — applied per day
-// ═══════════════════════════════════════════════════════
-function analyzeDay(dayIdx, btcDaily, ethDaily, btcWeekly, btc4H, eth4H, btcFunding, ethFunding, fg, dom) {
-  // Use data up to this day (no lookahead)
-  const btcD = btcDaily.slice(0, dayIdx+1);
-  const ethD = ethDaily.slice(0, dayIdx+1);
-  const price = btcD[btcD.length-1].close;
+// ═══════════════════════════════════════════════════
+// ETH RELATIVE — correct calculation from daily data
+// ═══════════════════════════════════════════════════
+function calcEthRelative(btcCloses, ethCloses, dom) {
+  if(btcCloses.length<2||ethCloses.length<2) return {state:'NEUTRU',score:50};
+  const n = Math.min(btcCloses.length, ethCloses.length);
+  const btcC = btcCloses.slice(-n);
+  const ethC = ethCloses.slice(-n);
+
+  const ethBtcRatio = ethC[n-1] / btcC[n-1];
+  // Compare ETH/BTC ratio vs 20 days ago
+  const ratio20ago = n>20 ? ethC[n-21]/btcC[n-21] : ethBtcRatio;
+  const ratioChg = (ethBtcRatio - ratio20ago) / ratio20ago * 100;
+
+  // RSI relative
+  const btcRsiArr = calcRSI(btcC, 14);
+  const ethRsiArr = calcRSI(ethC, 14);
+  const btcRsi = btcRsiArr ? btcRsiArr[btcRsiArr.length-1] : 50;
+  const ethRsi = ethRsiArr ? ethRsiArr[ethRsiArr.length-1] : 50;
+  const rsiDiff = ethRsi - btcRsi;
+
+  // 24h perf relative
+  const btcChg = (btcC[n-1]-btcC[n-2])/btcC[n-2]*100;
+  const ethChg = (ethC[n-1]-ethC[n-2])/ethC[n-2]*100;
+  const relPerf = ethChg - btcChg;
+
+  let score = 50;
+  if(ratioChg < -5) score -= 20; else if(ratioChg < -2) score -= 10; else if(ratioChg > 5) score += 20; else if(ratioChg > 2) score += 10;
+  if(rsiDiff < -8) score -= 12; else if(rsiDiff > 8) score += 12;
+  if(relPerf < -2) score -= 10; else if(relPerf > 2) score += 10;
+  if((dom||55) > 58) score -= 8; else if((dom||55) < 50) score += 8;
+
+  score = Math.max(0, Math.min(100, Math.round(score)));
+  const state = score >= 62 ? 'STRENGTH' : score <= 38 ? 'WEAKNESS' : 'NEUTRU';
+  return {state, score, ratioChg: ratioChg.toFixed(1), rsiDiff: rsiDiff.toFixed(1), relPerf: relPerf.toFixed(2)};
+}
+
+// ═══════════════════════════════════════════════════
+// MAIN ANALYSIS — per day
+// ═══════════════════════════════════════════════════
+function analyzeDay(dayIdx, allBtcDaily, allEthDaily, allBtcWeekly, btcFundingMap, fngMap, dom) {
+  const btcD = allBtcDaily.slice(0, dayIdx+1);
+  const ethD = allEthDaily.slice(0, dayIdx+1);
+  const dateStr = allBtcDaily[dayIdx].ts;
+  if(btcD.length < 30) return null;
+
+  const price    = btcD[btcD.length-1].close;
   const ethPrice = ethD[ethD.length-1].close;
-  const prevPrice = btcD.length>1 ? btcD[btcD.length-2].close : price;
-  const dayChg = ((price-prevPrice)/prevPrice*100);
+  const prevPrice = btcD[btcD.length-2].close;
+  const dayChg    = (price-prevPrice)/prevPrice*100;
 
   const btcCloses = btcD.map(c=>c.close);
   const ethCloses = ethD.map(c=>c.close);
 
-  // RSI
+  // ── RSI Daily
   const rsiDArr = calcRSI(btcCloses, 14);
-  const rsiD = rsiDArr ? rsiDArr[rsiDArr.length-1] : 50;
-  const rsiDPrev = rsiDArr && rsiDArr.length>1 ? rsiDArr[rsiDArr.length-2] : rsiD;
-  const rsiWArr = calcRSI(btcWeekly.map(c=>c.close), 14);
-  const rsiW = rsiWArr ? rsiWArr[rsiWArr.length-1] : 50;
-  const ethRsiArr = calcRSI(ethCloses, 14);
-  const ethRsiD = ethRsiArr ? ethRsiArr[ethRsiArr.length-1] : 50;
+  const rsiD    = rsiDArr ? rsiDArr[rsiDArr.length-1] : 50;
 
-  // EMA200
-  const ema200 = calcEMA(btcCloses, Math.min(200, btcCloses.length));
+  // ── RSI 1W — FIXED: use only weekly candles up to this date
+  const weeklyClosesUpToDate = getWeeklyClosesUpToDate(allBtcWeekly, dateStr);
+  const rsiWArr = calcRSI(weeklyClosesUpToDate, 14);
+  const rsiW    = rsiWArr ? rsiWArr[rsiWArr.length-1] : 50;
+
+  // ── EMA200 daily
+  const ema200  = calcEMALast(btcCloses, Math.min(200, btcCloses.length));
   const ema200Dist = ema200 ? (price-ema200)/ema200*100 : 0;
 
-  // EMA 4H
-  const closes4H = btc4H.map(c=>c.close);
-  const e9  = calcEMA(closes4H, 9)  || price;
-  const e21 = calcEMA(closes4H, 21) || price;
-  const e50 = calcEMA(closes4H, 50) || price;
-  const stackBull = e9>e21&&e21>e50&&price>e9;
-  const stackBear = e9<e21&&e21<e50&&price<e9;
+  // ── Ichimoku 1W — use weekly candles up to this date
+  const weeklyUpToDate = allBtcWeekly.filter(w => new Date(w.ts) <= new Date(dateStr));
+  const ichi = calcIchimoku(weeklyUpToDate);
 
-  // MACD 4H
-  const macd = calcMACD(closes4H, 12, 26, 9);
+  // ── ETH Relative — FIXED: from daily ratio
+  const fg  = fngMap[dateStr] || 50;
+  const ethRel = calcEthRelative(btcCloses, ethCloses, dom);
+
+  // ── 4H proxy: use last 30 daily closes for EMA/MACD approximation
+  // (4H data not stored per day in this backtest — use daily as proxy)
+  const btcCloses30 = btcCloses.slice(-30);
+  const e9  = calcEMALast(btcCloses30, Math.min(9, btcCloses30.length));
+  const e21 = calcEMALast(btcCloses30, Math.min(21, btcCloses30.length));
+  const e50 = calcEMALast(btcCloses30, Math.min(50, btcCloses.length));
+  const e50Full = calcEMALast(btcCloses, Math.min(50, btcCloses.length));
+  const stackBull = e9&&e21&&e50Full && e9>e21&&e21>e50Full&&price>e9;
+  const stackBear = e9&&e21&&e50Full && e9<e21&&e21<e50Full&&price<e9;
+  const macd = calcMACD(btcCloses, 12, 26, 9);
   const macdBull = macd?.bullish ?? false;
-  const macdCross = macd?.crossup || macd?.crossdown;
 
-  // Ichimoku 1W
-  const ichi = calcIchimoku(btcWeekly);
+  // ── Funding
+  const btcFunding = btcFundingMap[dateStr] || 0.01;
 
-  // ETH Relative
-  const ethbtc = ethPrice/price;
-  const ethRsiDiff = ethRsiD - rsiD;
-  const ethbtcChg = ethD.length>1 ? ((ethD[ethD.length-1].close - ethD[ethD.length-2].close)/ethD[ethD.length-2].close*100) : 0;
-  let ethScore = 50;
-  if(ethbtc<0.025) ethScore-=20; else if(ethbtc<0.04) ethScore-=12; else if(ethbtc>0.055) ethScore+=12;
-  if(dom>58) ethScore-=12; else if(dom<50) ethScore+=10;
-  if(ethRsiDiff<-8) ethScore-=10; else if(ethRsiDiff>8) ethScore+=10;
-  if(ethbtcChg<dayChg-3) ethScore-=10; else if(ethbtcChg>dayChg+3) ethScore+=10;
-  ethScore=Math.max(0,Math.min(100,Math.round(ethScore)));
-  const ethState = ethScore>=65?'STRENGTH':ethScore<=35?'WEAKNESS':'NEUTRU';
+  // ══════════════════════════════════════════
+  // DASHBOARD LOGIC — 4 niveluri
+  // ══════════════════════════════════════════
 
-  // ── NIVEAU 1: Context (Bias structural) ──
-  const contextBear = (ichi?.bullCount||2)<=1 || ema200Dist<0;
-  const contextBull = (ichi?.bullCount||2)>=3 && ema200Dist>0;
+  // NIVEL 1 — Context (Bias structural)
+  const ichiScore  = ichi?.bullCount ?? 2;
+  const contextBear = ichiScore <= 1 || ema200Dist < 0;
+  const contextBull = ichiScore >= 3 && ema200Dist > 0;
 
-  // ── NIVEAU 2: Confirmation ──
-  const confBear = rsiD<45 || ethState==='WEAKNESS';
-  const confBull = rsiD>55 && ethState!=='WEAKNESS';
-  const confState = contextBear ? (confBear?'Aligned':confBull?'Contradicting':'Mixed') : 'N/A';
+  // NIVEL 2 — Confirmation
+  // eth_state = WEAKNESS/NEUTRU/STRENGTH
+  const ethState = ethRel.state;
+  const rsiWBear = rsiW < 45;
+  const rsiWBull = rsiW > 55;
+  const confBear = rsiWBear || ethState==='WEAKNESS';
+  const confBull = rsiWBull && ethState!=='WEAKNESS';
 
-  // ── NIVEAU 3: Trigger ──
+  let confState = 'Neutral';
+  if(contextBear) {
+    if(confBear) confState='Aligned';
+    else if(confBull) confState='Contradicting';
+    else confState='Mixed';
+  } else if(contextBull) {
+    if(confBull) confState='Aligned_Bull';
+    else if(confBear) confState='Contradicting_Bull';
+    else confState='Mixed_Bull';
+  }
+
+  // NIVEL 3 — Trigger
   const triggerBearSigs=[];
-  if(stackBear) triggerBearSigs.push('EMA bear stack');
-  if(!macdBull) triggerBearSigs.push('MACD bearish'+(macd?.crossdown?' ⚡':''));
-  if(rsiD<45)   triggerBearSigs.push('RSI<45('+rsiD.toFixed(0)+')');
-  if(btcFunding>0.03) triggerBearSigs.push('Funding high');
-  const triggerBull=stackBull&&macdBull;
-  const triggerBear=triggerBearSigs.length>=2;
+  if(stackBear)      triggerBearSigs.push('EMA bear stack');
+  if(!macdBull)      triggerBearSigs.push('MACD bearish'+(macd?.crossdown?' ⚡':''));
+  if(rsiD<45)        triggerBearSigs.push('RSI 1D sub 45 ('+rsiD.toFixed(0)+')');
+  if(btcFunding>0.03) triggerBearSigs.push('Funding>0.03%');
 
-  // ── NIVEAU 4: Fuel ──
-  const fuelBear = ethState==='WEAKNESS' || fg<30 || btcFunding>0.05;
-  const fuelBull = ethState==='STRENGTH' || fg<25;
+  const triggerBullSigs=[];
+  if(stackBull)      triggerBullSigs.push('EMA bull stack');
+  if(macdBull)       triggerBullSigs.push('MACD bullish'+(macd?.crossup?' ⚡':''));
+  if(rsiD>55)        triggerBullSigs.push('RSI 1D peste 55');
+
+  const triggerBear = triggerBearSigs.length >= 2;
+  const triggerBull = triggerBullSigs.length >= 2;
+
+  // NIVEL 4 — Fuel
+  const eth_fuel_bear = ethState==='WEAKNESS';
+  const eth_fuel_bull = ethState==='STRENGTH';
+  const fuelBear = eth_fuel_bear || (fg<30&&btcFunding>0.03) || btcFunding>0.05;
+  const fuelBull = eth_fuel_bull || fg<25;
+
+  // No Trade Zone
+  const emaFlat = e9&&e21 && Math.abs(e9-e21)/e21<0.005;
+  const rsiNeutral = rsiD>42&&rsiD<58;
+  const noTrade = emaFlat && rsiNeutral && ethState==='NEUTRU';
+
+  // Extension / Valuation
+  const overextended = ema200Dist > 20;
+  const confidencePenalty = Math.min(0.20, overextended?0.20:0);
 
   // ── ALERT STATE ──
   let alertState='', alertColor='neutral';
-  // No trade zone
-  const emaFlat = Math.abs(e9-e21)/e21<0.005;
-  const rsi4hRaw = calcRSI(closes4H,14);
-  const rsi4h = rsi4hRaw ? rsi4hRaw[rsi4hRaw.length-1] : 50;
-  const noTrade = emaFlat && rsi4h>40 && rsi4h<60 && ethState==='NEUTRU';
 
-  if(noTrade) { alertState='◈ CONSOLIDARE'; alertColor='neutral'; }
-  else if(contextBear && triggerBull && !triggerBear) { alertState='↗ COUNTER-TREND'; alertColor='purple'; }
-  else if(contextBear) {
-    if(confState==='Contradicting') { alertState='◈ BIAS BEAR (contradicție)'; alertColor='warn'; }
-    else if(triggerBear) {
-      if(fuelBear && confState==='Aligned') { alertState='🔴 SEMNAL BEAR ACTIV'; alertColor='danger'; }
-      else { alertState='⚠ SETUP BEAR FORMARE'; alertColor='warn'; }
-    } else { alertState='◈ BIAS BEARISH'; alertColor='warn'; }
+  if(noTrade) {
+    alertState='◈ CONSOLIDARE'; alertColor='neutral';
+  } else if(contextBear && triggerBull && !triggerBear) {
+    alertState='↗ COUNTER-TREND'; alertColor='purple';
+  } else if(contextBear) {
+    if(confState==='Contradicting') {
+      alertState='◈ BIAS BEAR (contradicție)'; alertColor='warn';
+    } else if(triggerBear) {
+      if(fuelBear && confState==='Aligned') {
+        alertState='🔴 SEMNAL BEAR ACTIV'; alertColor='danger';
+      } else {
+        alertState='⚠ SETUP BEAR FORMARE'; alertColor='warn';
+      }
+    } else {
+      alertState='◈ BIAS BEARISH'; alertColor='warn';
+    }
+  } else if(contextBull) {
+    if(confState==='Contradicting_Bull') {
+      alertState='◈ BIAS BULL (contradicție)'; alertColor='safe';
+    } else if(triggerBull) {
+      if(fuelBull && confState==='Aligned_Bull') {
+        alertState='🟢 SEMNAL BULL ACTIV'; alertColor='safe';
+      } else {
+        alertState='↑ SETUP BULL FORMARE'; alertColor='safe';
+      }
+    } else {
+      alertState='◈ BIAS BULLISH'; alertColor='safe';
+    }
+  } else {
+    alertState='◈ CONTEXT NECLAR'; alertColor='neutral';
   }
-  else if(contextBull) {
-    if(triggerBull && fuelBull) { alertState='🟢 SEMNAL BULL ACTIV'; alertColor='safe'; }
-    else if(triggerBull) { alertState='↑ SETUP BULL FORMARE'; alertColor='safe'; }
-    else { alertState='◈ BIAS BULLISH'; alertColor='safe'; }
-  }
-  else { alertState='◈ CONTEXT NECLAR'; alertColor='neutral'; }
-
-  // ── Extension Risk Flags ──
-  const overextended = ema200Dist>20;
-  const modDrawdown = false; // need ATH data — simplified
-  const confidencePenalty = Math.min(0.20, (overextended?0.20:0));
 
   return {
-    date: btcD[btcD.length-1].ts || dayIdx,
+    date: dateStr, dayIdx,
     price, ethPrice, dayChg,
-    rsiD: rsiD.toFixed(1), rsiW: rsiW.toFixed(1), rsi4h: rsi4h.toFixed(1),
-    ema200Dist: ema200Dist.toFixed(1),
-    stackBull, stackBear, macdBull, macdCross,
-    ichiAbove: ichi?.above, ichiBelow: ichi?.below,
-    ethState, ethScore,
-    contextBear, contextBull,
+    rsiD: +rsiD.toFixed(1), rsiW: +rsiW.toFixed(1),
+    ema200Dist: +ema200Dist.toFixed(1),
+    ichiScore, ichiAbove: ichi?.above, ichiBelow: ichi?.below,
+    ethState, ethScore: ethRel.score,
+    ethRatioChg: ethRel.ratioChg,
     confState, triggerBear, triggerBull, fuelBear, fuelBull,
+    triggerBearSigs, triggerBullSigs,
     alertState, alertColor,
-    confidencePenalty: (confidencePenalty*100).toFixed(0),
-    noTrade,
+    confidencePenalty: Math.round(confidencePenalty*100),
+    noTrade, fg, btcFunding,
+    stackBull, stackBear, macdBull,
   };
 }
 
-// ═══════════════════════════════════════════════════════
-// EVALUATION — compare signal vs next day move
-// ═══════════════════════════════════════════════════════
-function evaluateSignal(alert, nextDayChg) {
-  if(nextDayChg === null) return {result:'⏳', correct: null};
-  const isBearAlert = alert.includes('BEAR') || alert.includes('BIAS BEAR');
-  const isBullAlert = alert.includes('BULL') || alert.includes('BIAS BULL');
-  const isBear = nextDayChg <= -2;
-  const isBull = nextDayChg >= 2;
+// ═══════════════════════════════════════════════════
+// EVALUATION — T+1, T+3, T+7
+// ═══════════════════════════════════════════════════
+function evalSignal(alertState, chg, horizon) {
+  if(chg === null || chg === undefined) return {result:'⏳', correct:null, color:'neutral'};
+  // Threshold: T+1=2%, T+3=4%, T+7=6%
+  const thresh = horizon===1?2:horizon===3?3:5;
+  const isBear = chg <= -thresh;
+  const isBull = chg >= thresh;
   const isNeutral = !isBear && !isBull;
 
-  if(alert.includes('CONSOLIDARE') || alert.includes('NECLAR')) {
-    return {result: isNeutral?'✅ corect':'〰 parțial', correct: isNeutral};
+  const alertBear = alertState.includes('BEAR') || alertState.includes('SETUP');
+  const alertBull = alertState.includes('BULL') || alertState.includes('SETUP BULL');
+  const alertNeutral = alertState.includes('CONSOLIDARE') || alertState.includes('NECLAR');
+  const alertCounter = alertState.includes('COUNTER');
+
+  if(alertNeutral) {
+    const r = isNeutral?'✅':isBear||isBull?'〰':'✅';
+    return {result:r, correct:isNeutral, color:isNeutral?'safe':'warn'};
   }
-  if(isBearAlert) {
-    if(isBear) return {result:'✅ corect', correct:true};
-    if(isNeutral) return {result:'〰 parțial', correct:null};
-    return {result:'❌ greșit', correct:false};
+  if(alertCounter) {
+    // Counter-trend = expect short bounce up in bear
+    const r = isBull?'✅':isBear?'❌':'〰';
+    return {result:r, correct:isBull, color:isBull?'safe':isBear?'danger':'warn'};
   }
-  if(isBullAlert) {
-    if(isBull) return {result:'✅ corect', correct:true};
-    if(isNeutral) return {result:'〰 parțial', correct:null};
-    return {result:'❌ greșit', correct:false};
+  if(alertBear) {
+    if(isBear) return {result:'✅', correct:true, color:'safe'};
+    if(isNeutral) return {result:'〰', correct:null, color:'warn'};
+    return {result:'❌', correct:false, color:'danger'};
   }
-  if(alert.includes('COUNTER-TREND')) {
-    // Counter-trend = we expect bounce in bear = small up, not continuation
-    return {result: isBull?'✅ corect': isBear?'❌ greșit':'〰 parțial', correct: isBull};
+  if(alertBull) {
+    if(isBull) return {result:'✅', correct:true, color:'safe'};
+    if(isNeutral) return {result:'〰', correct:null, color:'warn'};
+    return {result:'❌', correct:false, color:'danger'};
   }
-  return {result:'—', correct:null};
+  return {result:'—', correct:null, color:'neutral'};
 }
 
-// ═══════════════════════════════════════════════════════
+function calcFutureChg(allBtcDaily, dayIdx, horizon) {
+  const futureIdx = dayIdx + horizon;
+  if(futureIdx >= allBtcDaily.length) return null;
+  const start = allBtcDaily[dayIdx].close;
+  const end   = allBtcDaily[futureIdx].close;
+  return (end-start)/start*100;
+}
+
+// ═══════════════════════════════════════════════════
 // FETCH + RUN
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 async function fetchKlines(symbol, interval, limit) {
-  const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
-  const r = await fetch(url);
+  const url=`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+  const r=await fetch(url);
   if(!r.ok) throw new Error(`${symbol} ${interval}: HTTP ${r.status}`);
-  const data = await r.json();
-  return data.map(k => ({
-    ts: new Date(k[0]).toISOString().slice(0,10),
-    open:+k[1], high:+k[2], low:+k[3], close:+k[4], vol:+k[5]
-  }));
+  const data=await r.json();
+  return data.map(k=>({ts:new Date(k[0]).toISOString().slice(0,10),open:+k[1],high:+k[2],low:+k[3],close:+k[4],vol:+k[5]}));
 }
-
 async function fetchFunding(symbol) {
-  const url = `https://fapi.binance.com/fapi/v1/fundingRate?symbol=${symbol}&limit=200`;
-  const r = await fetch(url);
+  const url=`https://fapi.binance.com/fapi/v1/fundingRate?symbol=${symbol}&limit=500`;
+  const r=await fetch(url);
   if(!r.ok) return {};
-  const data = await r.json();
-  const map = {};
-  data.forEach(d => {
-    const date = new Date(d.fundingTime).toISOString().slice(0,10);
-    map[date] = (map[date] || 0) + parseFloat(d.fundingRate)*100;
-  });
+  const data=await r.json();
+  const map={};
+  data.forEach(d=>{const date=new Date(d.fundingTime).toISOString().slice(0,10);if(!map[date])map[date]=0;map[date]+=parseFloat(d.fundingRate)*100;});
   return map;
 }
+function log(msg){document.getElementById('log').textContent=msg;}
 
-function log(msg) { document.getElementById('log').textContent = msg; }
-
-async function run() {
-  const btn = document.getElementById('runBtn');
-  btn.disabled = true;
-  btn.textContent = '⏳ Se încarcă datele...';
+async function run(){
+  const btn=document.getElementById('runBtn');
+  btn.disabled=true; btn.textContent='⏳ Se încarcă...';
 
   try {
-    log('Fetching BTC 1D klines...');
+    log('Fetching BTC 1D (365 zile)...');
     const btcDaily = await fetchKlines('BTCUSDT','1d',365);
-
-    log('Fetching ETH 1D klines...');
+    log('Fetching ETH 1D...');
     const ethDaily = await fetchKlines('ETHUSDT','1d',365);
-
-    log('Fetching BTC 1W klines...');
+    log('Fetching BTC 1W (100 săptămâni)...');
     const btcWeekly = await fetchKlines('BTCUSDT','1w',100);
-
-    log('Fetching BTC 4H klines...');
-    const btc4H = await fetchKlines('BTCUSDT','4h',500);
-
-    log('Fetching ETH 4H klines...');
-    const eth4H = await fetchKlines('ETHUSDT','4h',500);
-
-    log('Fetching funding rates...');
+    log('Fetching BTC Funding...');
     const btcFundingMap = await fetchFunding('BTCUSDT');
-    const ethFundingMap = await fetchFunding('ETHUSDT');
-
-    log('Fetching Fear & Greed...');
-    const fngResp = await fetch('https://api.alternative.me/fng/?limit=60');
+    log('Fetching Fear & Greed (90 zile)...');
+    const fngResp = await fetch('https://api.alternative.me/fng/?limit=90');
     const fngData = await fngResp.json();
-    const fngMap = {};
-    fngData.data.forEach(d => {
-      const date = new Date(d.timestamp*1000).toISOString().slice(0,10);
-      fngMap[date] = parseInt(d.value);
-    });
+    const fngMap={};
+    fngData.data.forEach(d=>{const date=new Date(d.timestamp*1000).toISOString().slice(0,10);fngMap[date]=parseInt(d.value);});
+    log('Fetching BTC Dominance...');
+    const domResp=await fetch('https://api.coingecko.com/api/v3/global');
+    const domData=await domResp.json();
+    const dom=domData.data.market_cap_percentage.btc;
 
-    log('Fetching BTC dominance...');
-    const domResp = await fetch('https://api.coingecko.com/api/v3/global');
-    const domData = await domResp.json();
-    const dom = domData.data.market_cap_percentage.btc;
+    // Q1 2026: Jan 1 – Mar 28
+    const q1Start='2026-01-01', q1End='2026-03-28';
+    const q1Days=btcDaily.filter(d=>d.ts>=q1Start&&d.ts<=q1End);
+    log(`Analizând ${q1Days.length} zile Q1 2026...`);
 
-    // Filter March 2026
-    const marchStart = '2026-03-01';
-    const marchEnd   = '2026-03-28';
-    const marchDays  = btcDaily.filter(d => d.ts >= marchStart && d.ts <= marchEnd);
-
-    log(`Analizând ${marchDays.length} zile din Martie 2026...`);
-
-    const results = [];
-    for(const day of marchDays) {
-      const dayIdx = btcDaily.findIndex(d => d.ts === day.ts);
-      if(dayIdx < 50) continue; // not enough history
-
-      // Get 4H candles up to this day
-      const dayEnd = new Date(day.ts); dayEnd.setDate(dayEnd.getDate()+1);
-      const btc4HSlice = btc4H.filter(c => new Date(c.ts) <= dayEnd).slice(-120);
-      const eth4HSlice = eth4H.filter(c => new Date(c.ts) <= dayEnd).slice(-120);
-
-      const btcFund = btcFundingMap[day.ts] || 0.01;
-      const ethFund = ethFundingMap[day.ts] || 0.01;
-      const fg = fngMap[day.ts] || 50;
-
-      const analysis = analyzeDay(
-        dayIdx, btcDaily, ethDaily, btcWeekly,
-        btc4HSlice, eth4HSlice,
-        btcFund, ethFund, fg, dom
-      );
-      analysis.date = day.ts;
-
-      // Next day move for evaluation
-      const nextDay = btcDaily[dayIdx+1];
-      const nextChg = nextDay ? ((nextDay.close - day.close)/day.close*100) : null;
-      analysis.nextDayChg = nextChg;
-      analysis.eval = evaluateSignal(analysis.alertState, nextChg);
-
+    const results=[];
+    for(const day of q1Days){
+      const dayIdx=btcDaily.findIndex(d=>d.ts===day.ts);
+      if(dayIdx<50) continue;
+      const analysis=analyzeDay(dayIdx,btcDaily,ethDaily,btcWeekly,btcFundingMap,fngMap,dom);
+      if(!analysis) continue;
+      // Compute future changes
+      analysis.chgT1=calcFutureChg(btcDaily,dayIdx,1);
+      analysis.chgT3=calcFutureChg(btcDaily,dayIdx,3);
+      analysis.chgT7=calcFutureChg(btcDaily,dayIdx,7);
+      analysis.evalT1=evalSignal(analysis.alertState,analysis.chgT1,1);
+      analysis.evalT3=evalSignal(analysis.alertState,analysis.chgT3,3);
+      analysis.evalT7=evalSignal(analysis.alertState,analysis.chgT7,7);
       results.push(analysis);
     }
 
-    renderResults(results);
     log(`✅ Backtest complet — ${results.length} zile analizate`);
+    renderResults(results);
 
   } catch(e) {
-    log('❌ Eroare: ' + e.message);
+    log('❌ Eroare: '+e.message);
     console.error(e);
   }
-
-  btn.disabled = false;
-  btn.textContent = '▶ Rulează din nou';
+  btn.disabled=false; btn.textContent='▶ Rulează din nou';
 }
 
-function fmt(v) { return '$'+Math.round(v).toLocaleString('en-US'); }
-function fmtP(v) { return (v>=0?'+':'')+parseFloat(v).toFixed(2)+'%'; }
+// ═══════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════
+function fmt(v){return '$'+Math.round(v).toLocaleString('en-US');}
+function fmtP(v){return v===null||v===undefined?'—':(v>=0?'+':'')+parseFloat(v).toFixed(2)+'%';}
+function pillC(ac){return ac==='danger'?'pill-danger':ac==='safe'?'pill-safe':ac==='warn'?'pill-warn':ac==='purple'?'pill-purple':'pill-neutral';}
 
-function pillColor(ac) {
-  return ac==='danger'?'pill-danger':ac==='safe'?'pill-safe':ac==='warn'?'pill-warn':ac==='purple'?'pill-purple':'pill-neutral';
+function calcStats(rows, evalKey) {
+  const evaluated = rows.filter(r=>r[evalKey].result!=='⏳'&&r[evalKey].result!=='—');
+  const correct  = evaluated.filter(r=>r[evalKey].correct===true).length;
+  const wrong    = evaluated.filter(r=>r[evalKey].correct===false).length;
+  const partial  = evaluated.filter(r=>r[evalKey].correct===null&&r[evalKey].result!=='⏳').length;
+  const accuracy = evaluated.length>0?Math.round(correct/evaluated.length*100):0;
+  return {correct,wrong,partial,total:evaluated.length,accuracy};
 }
 
 function renderResults(rows) {
-  const correct = rows.filter(r=>r.eval.correct===true).length;
-  const wrong   = rows.filter(r=>r.eval.correct===false).length;
-  const partial = rows.filter(r=>r.eval.correct===null && r.eval.result!=='⏳').length;
-  const total   = rows.filter(r=>r.eval.result!=='⏳').length;
-  const accuracy = total>0 ? Math.round(correct/total*100) : 0;
+  const s1=calcStats(rows,'evalT1'), s3=calcStats(rows,'evalT3'), s7=calcStats(rows,'evalT7');
 
-  // Count alert types
-  const bearSignals  = rows.filter(r=>r.alertState.includes('SEMNAL BEAR')).length;
-  const bullSignals  = rows.filter(r=>r.alertState.includes('SEMNAL BULL')).length;
-  const setupBear    = rows.filter(r=>r.alertState.includes('SETUP BEAR')).length;
-  const noTrade      = rows.filter(r=>r.noTrade).length;
-  const counterTrend = rows.filter(r=>r.alertState.includes('COUNTER')).length;
+  // Signal distribution
+  const byType={
+    'SEMNAL BEAR':rows.filter(r=>r.alertState.includes('SEMNAL BEAR')).length,
+    'SEMNAL BULL':rows.filter(r=>r.alertState.includes('SEMNAL BULL')).length,
+    'SETUP BEAR':rows.filter(r=>r.alertState.includes('SETUP BEAR')).length,
+    'SETUP BULL':rows.filter(r=>r.alertState.includes('SETUP BULL')).length,
+    'BIAS BEAR':rows.filter(r=>r.alertState.includes('BIAS BEAR')).length,
+    'BIAS BULL':rows.filter(r=>r.alertState.includes('BIAS BULL')).length,
+    'COUNTER-TREND':rows.filter(r=>r.alertState.includes('COUNTER')).length,
+    'CONSOLIDARE':rows.filter(r=>r.alertState.includes('CONSOLIDARE')).length,
+    'CONTEXT NECLAR':rows.filter(r=>r.alertState.includes('NECLAR')).length,
+  };
 
-  const el = document.getElementById('results');
-  el.innerHTML = `
-    <div class="section-title">Rezumat Backtest — Martie 2026 (${rows.length} zile)</div>
+  // ETH Relative distribution
+  const ethWeak=rows.filter(r=>r.ethState==='WEAKNESS').length;
+  const ethStr=rows.filter(r=>r.ethState==='STRENGTH').length;
+  const ethNeu=rows.filter(r=>r.ethState==='NEUTRU').length;
+
+  // Auto insights
+  const insights=[];
+  if(s7.accuracy>s1.accuracy+10) insights.push({type:'safe',text:`Sistemul performează mai bine pe T+7 (${s7.accuracy}%) față de T+1 (${s1.accuracy}%) — confirmă că semnalele sunt de natură macro și nu de timing intraday.`});
+  if(s1.accuracy<40) insights.push({type:'warn',text:`Acuratețea T+1 (${s1.accuracy}%) este scăzută — așteptat pentru semnale macro evaluate pe 24h. Bounce-urile de 2-5% în bear market generează false negatives.`});
+  const bearWrong=rows.filter(r=>r.alertState.includes('BEAR')&&r.evalT3.correct===false).length;
+  const bearTotal=rows.filter(r=>r.alertState.includes('BEAR')).length;
+  if(bearTotal>0&&bearWrong/bearTotal>0.3) insights.push({type:'warn',text:`${Math.round(bearWrong/bearTotal*100)}% din semnalele bearish au fost greșite pe T+3 — posibil prea multe semnale în perioadele de bounce. Trigger freshness ar putea ajuta.`});
+  const biasCorrect=rows.filter(r=>r.alertState.includes('BIAS BEAR')&&r.evalT7.correct===true).length;
+  const biasTotal=rows.filter(r=>r.alertState.includes('BIAS BEAR')).length;
+  if(biasTotal>5&&biasCorrect/biasTotal>0.5) insights.push({type:'safe',text:`Bias Bearish are acuratețe ${Math.round(biasCorrect/biasTotal*100)}% pe T+7 — context macro funcționează bine pe termen lung chiar dacă nu pe T+1.`});
+
+  const el=document.getElementById('results');
+  el.innerHTML=`
+    <div class="section-title">Acuratețe pe Orizont Temporal</div>
     <div class="summary">
+      <div class="stat"><div class="stat-val" style="color:${s1.accuracy>=55?'var(--safe)':s1.accuracy>=40?'var(--warn)':'var(--danger)'}">${s1.accuracy}%</div><div class="stat-lbl">Acuratețe T+1</div></div>
+      <div class="stat"><div class="stat-val" style="color:${s3.accuracy>=55?'var(--safe)':s3.accuracy>=40?'var(--warn)':'var(--danger)'}">${s3.accuracy}%</div><div class="stat-lbl">Acuratețe T+3</div></div>
+      <div class="stat"><div class="stat-val" style="color:${s7.accuracy>=55?'var(--safe)':s7.accuracy>=40?'var(--warn)':'var(--danger)'}">${s7.accuracy}%</div><div class="stat-lbl">Acuratețe T+7</div></div>
+      <div class="stat"><div class="stat-val neutral">${rows.length}</div><div class="stat-lbl">Zile analizate</div></div>
+      <div class="stat"><div class="stat-val" style="color:var(--cyan)">${s7.total}</div><div class="stat-lbl">Semnale evaluate T+7</div></div>
+    </div>
+
+    <div class="summary3">
       <div class="stat">
-        <div class="stat-val safe">${accuracy}%</div>
-        <div class="stat-lbl">Acuratețe semnale</div>
+        <div style="display:flex;justify-content:space-around">
+          <div><div class="stat-val safe">${s7.correct}</div><div class="stat-lbl">✅ Corecte</div></div>
+          <div><div class="stat-val warn">${s7.partial}</div><div class="stat-lbl">〰 Parțiale</div></div>
+          <div><div class="stat-val danger">${s7.wrong}</div><div class="stat-lbl">❌ Greșite</div></div>
+        </div>
+        <div class="stat-lbl" style="margin-top:6px">Distribuție T+7</div>
       </div>
       <div class="stat">
-        <div class="stat-val safe">${correct}</div>
-        <div class="stat-lbl">✅ Corecte</div>
+        <div style="display:flex;justify-content:space-around">
+          <div><div class="stat-val danger">${ethWeak}</div><div class="stat-lbl">WEAKNESS</div></div>
+          <div><div class="stat-val neutral">${ethNeu}</div><div class="stat-lbl">NEUTRU</div></div>
+          <div><div class="stat-val safe">${ethStr}</div><div class="stat-lbl">STRENGTH</div></div>
+        </div>
+        <div class="stat-lbl" style="margin-top:6px">ETH Relative distribuție</div>
       </div>
       <div class="stat">
-        <div class="stat-val warn">${partial}</div>
-        <div class="stat-lbl">〰 Parțiale</div>
-      </div>
-      <div class="stat">
-        <div class="stat-val danger">${wrong}</div>
-        <div class="stat-lbl">❌ Greșite</div>
-      </div>
-      <div class="stat">
-        <div class="stat-val neutral">${total}</div>
-        <div class="stat-lbl">Total evaluate</div>
+        <div style="font-size:.6rem;text-align:left;line-height:2">
+          ${Object.entries(byType).map(([k,v])=>`<div><span class="neutral">${k}:</span> <strong>${v}</strong></div>`).join('')}
+        </div>
       </div>
     </div>
 
-    <div class="summary">
-      <div class="stat"><div class="stat-val danger">${bearSignals}</div><div class="stat-lbl">🔴 Semnale Bear</div></div>
-      <div class="stat"><div class="stat-val safe">${bullSignals}</div><div class="stat-lbl">🟢 Semnale Bull</div></div>
-      <div class="stat"><div class="stat-val warn">${setupBear}</div><div class="stat-lbl">⚠ Setup Bear</div></div>
-      <div class="stat"><div class="stat-val" style="color:#a78bfa">${counterTrend}</div><div class="stat-lbl">↗ Counter-trend</div></div>
-      <div class="stat"><div class="stat-val neutral">${noTrade}</div><div class="stat-lbl">◈ No Trade Zone</div></div>
+    ${insights.length?`<div class="section-title">Insights Automate</div>${insights.map(i=>`<div class="insight insight-${i.type}">${i.text}</div>`).join('')}`:''}
+
+    <div class="section-title">Detaliu pe Zile — Q1 2026</div>
+    <div class="tabs">
+      <div class="tab active" onclick="showTab('all',this)">Toate (${rows.length})</div>
+      <div class="tab" onclick="showTab('wrong',this)">❌ Greșite T+3 (${rows.filter(r=>r.evalT3.correct===false).length})</div>
+      <div class="tab" onclick="showTab('correct',this)">✅ Corecte T+3 (${rows.filter(r=>r.evalT3.correct===true).length})</div>
+      <div class="tab" onclick="showTab('signal',this)">Semnale active (${rows.filter(r=>r.alertState.includes('SEMNAL')).length})</div>
     </div>
+    <div id="tab-all" class="tab-content active">${renderTable(rows)}</div>
+    <div id="tab-wrong" class="tab-content">${renderTable(rows.filter(r=>r.evalT3.correct===false))}</div>
+    <div id="tab-correct" class="tab-content">${renderTable(rows.filter(r=>r.evalT3.correct===true))}</div>
+    <div id="tab-signal" class="tab-content">${renderTable(rows.filter(r=>r.alertState.includes('SEMNAL')))}</div>
 
-    <div class="legend">
-      <div class="leg-item"><div class="leg-dot" style="background:var(--danger)"></div>SEMNAL BEAR ACTIV</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--warn)"></div>SETUP / BIAS</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--safe)"></div>SEMNAL BULL</div>
-      <div class="leg-item"><div class="leg-dot" style="background:#a78bfa"></div>COUNTER-TREND</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--neutral)"></div>CONSOLIDARE / NECLAR</div>
-    </div>
-
-    <div class="section-title">Detaliu pe Zile</div>
-    <table>
-      <thead>
-        <tr>
-          <th>Data</th>
-          <th>BTC</th>
-          <th>Δ Zi</th>
-          <th>RSI 1D</th>
-          <th>RSI 1W</th>
-          <th>EMA200</th>
-          <th>Ichimoku</th>
-          <th>ETH Rel.</th>
-          <th>Alert State</th>
-          <th>Δ Ziua urm.</th>
-          <th>Evaluare</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows.map(r => {
-          const chgClass = r.dayChg>0?'safe':r.dayChg<0?'danger':'neutral';
-          const nextClass = r.nextDayChg===null?'neutral':r.nextDayChg>2?'safe':r.nextDayChg<-2?'danger':'warn';
-          const ichiState = r.ichiAbove?'↑ deasupra':r.ichiBelow?'↓ sub':'◈ în nor';
-          const ichiClass = r.ichiAbove?'safe':r.ichiBelow?'danger':'warn';
-          const evalClass = r.eval.result.includes('✅')?'safe':r.eval.result.includes('❌')?'danger':r.eval.result.includes('〰')?'warn':'neutral';
-          const penStr = r.confidencePenalty>0?` (-${r.confidencePenalty}%)` : '';
-          return `<tr>
-            <td style="white-space:nowrap">${r.date}</td>
-            <td style="white-space:nowrap">${fmt(r.price)}</td>
-            <td class="${chgClass}">${fmtP(r.dayChg)}</td>
-            <td>${r.rsiD}</td>
-            <td>${r.rsiW}</td>
-            <td class="${parseFloat(r.ema200Dist)>20?'warn':parseFloat(r.ema200Dist)<0?'danger':'safe'}">${r.ema200Dist}%${penStr}</td>
-            <td class="${ichiClass}">${ichiState}</td>
-            <td class="${r.ethState==='WEAKNESS'?'danger':r.ethState==='STRENGTH'?'safe':'neutral'}">${r.ethState}</td>
-            <td><span class="pill ${pillColor(r.alertColor)}">${r.alertState}</span></td>
-            <td class="${nextClass}">${r.nextDayChg!==null?fmtP(r.nextDayChg):'—'}</td>
-            <td class="${evalClass}">${r.eval.result}</td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>
-
-    <div class="section-title" style="margin-top:24px">Note metodologice</div>
-    <div style="font-size:.64rem;color:var(--neutral);line-height:1.8">
-      • Evaluarea se face pe mișcarea zilei URMĂTOARE față de semnalul zilei curente (T+1).<br>
-      • Corect = direcția prezisă și mișcare >2% în direcția respectivă.<br>
-      • Parțial = semnal bearish/bullish dar mișcarea < 2% (consolidare).<br>
-      • Greșit = direcție opusă cu mișcare >2%.<br>
-      • No Trade Zone și Context Neclar = corect dacă ziua următoare e neutră (|Δ| < 2%).<br>
-      • Funding rate daily = medie a celor 3 plăți din ziua respectivă.<br>
-      • EMA200 calculat pe datele disponibile până la ziua analizată (no lookahead).<br>
-      • ⚠ Backtestul simplifică unele calcule față de dashboard (ex: Chikou 1M, Fibonacci, Trendline Detection).<br>
+    <div class="section-title">Note metodologice</div>
+    <div style="font-size:.62rem;color:var(--neutral);line-height:1.9">
+      • <strong>T+1</strong>: mișcarea zilei următoare față de semnalul zilei curente. Prag: ±2%.<br>
+      • <strong>T+3</strong>: mișcarea cumulată în 3 zile. Prag: ±3%. Mai relevant pentru semnale macro.<br>
+      • <strong>T+7</strong>: mișcarea cumulată în 7 zile. Prag: ±5%. Cel mai relevant pentru context Ichimoku/EMA200.<br>
+      • RSI 1W: calculat corect din candelele weekly disponibile până la data analizată (no lookahead).<br>
+      • ETH Relative: calculat din ETH/BTC ratio zilnic + RSI relativ + performanță 24h + dominance.<br>
+      • EMA 4H și MACD 4H aproximate cu daily closes (backtestul nu stochează 4H per zi).<br>
+      • Funding rate: suma plăților din ziua respectivă (3 plăți × 8h = o zi).<br>
+      • ⚠ Backtestul nu include: Fibonacci, Trendline Detection, Chikou 1M complet, Pivoți Camarilla.<br>
       • Rezultatele sunt euristice — nu constituie validare statistică.
     </div>
   `;
+}
+
+function renderTable(rows) {
+  if(!rows.length) return '<div style="color:var(--neutral);padding:16px;font-size:.64rem">Nicio zi în această categorie.</div>';
+  return `<table>
+    <thead><tr>
+      <th>Data</th><th>BTC</th><th>Δ Zi</th>
+      <th>RSI 1D</th><th>RSI 1W</th><th>EMA200</th>
+      <th>Ichimoku</th><th>ETH Rel.</th><th>F&G</th>
+      <th>Alert State</th>
+      <th>T+1</th><th>Eval T+1</th>
+      <th>T+3</th><th>Eval T+3</th>
+      <th>T+7</th><th>Eval T+7</th>
+    </tr></thead>
+    <tbody>${rows.map(r=>{
+      const chgC=r.dayChg>0?'safe':r.dayChg<0?'danger':'neutral';
+      const ichiS=r.ichiAbove?'↑ deasupra':r.ichiBelow?'↓ sub':'◈ în nor';
+      const ichiC=r.ichiAbove?'safe':r.ichiBelow?'danger':'warn';
+      const ema200C=r.ema200Dist>20?'warn':r.ema200Dist<0?'danger':'safe';
+      const penStr=r.confidencePenalty>0?` (-${r.confidencePenalty}%)`:'';
+      const ethC=r.ethState==='WEAKNESS'?'danger':r.ethState==='STRENGTH'?'safe':'neutral';
+      const fgC=r.fg<25?'safe':r.fg>70?'danger':'neutral';
+      return `<tr>
+        <td>${r.date}</td>
+        <td>${fmt(r.price)}</td>
+        <td class="${chgC}">${fmtP(r.dayChg)}</td>
+        <td>${r.rsiD}</td>
+        <td class="${r.rsiW<45?'safe':r.rsiW>60?'danger':'neutral'}">${r.rsiW}</td>
+        <td class="${ema200C}">${r.ema200Dist}%${penStr}</td>
+        <td class="${ichiC}">${ichiS}</td>
+        <td class="${ethC}">${r.ethState}<br><span style="font-size:.54rem;color:var(--neutral)">${r.ethRatioChg}% ratio</span></td>
+        <td class="${fgC}">${r.fg}</td>
+        <td><span class="pill ${pillC(r.alertColor)}">${r.alertState}</span></td>
+        <td class="${r.chgT1===null?'neutral':r.chgT1>2?'safe':r.chgT1<-2?'danger':'warn'}">${fmtP(r.chgT1)}</td>
+        <td class="${r.evalT1.color}">${r.evalT1.result}</td>
+        <td class="${r.chgT3===null?'neutral':r.chgT3>3?'safe':r.chgT3<-3?'danger':'warn'}">${fmtP(r.chgT3)}</td>
+        <td class="${r.evalT3.color}">${r.evalT3.result}</td>
+        <td class="${r.chgT7===null?'neutral':r.chgT7>5?'safe':r.chgT7<-5?'danger':'warn'}">${fmtP(r.chgT7)}</td>
+        <td class="${r.evalT7.color}">${r.evalT7.result}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+function showTab(name, el) {
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  el.classList.add('active');
 }
 </script>
 </body>
