@@ -39,13 +39,13 @@ tr:hover td{background:rgba(255,255,255,.02)}
 </style>
 </head>
 <body>
-<h1>CryptoRisk v5 — Backtest Q1 2026</h1>
+<h1>CryptoRisk v5 — Backtest 6 Luni (Oct 2025 – Mar 2026)</h1>
 <div class="sub">
   Simulare logică dashboard pe date reale Binance · Ianuarie – Martie 2026 (~90 zile)<br>
-  v2 — Ajustări: contextBear strict (în nor ≠ bearish) · Crash Exhaustion Detector (drop>10% + RSI<25 + F&G<20) · Context Neclar explicit
+  v3 — Context neclar explicit · Crash Exhaustion strict (drop>15% + RSI<20 + F&G<15) · Metrică SEMNAL BEAR ACTIV izolat · 6 luni
 </div>
 
-<button class="btn" id="runBtn" onclick="run()">▶ Rulează Backtestul Q1 2026</button>
+<button class="btn" id="runBtn" onclick="run()">▶ Rulează Backtestul 6 Luni</button>
 <div id="log">Apasă butonul pentru a încărca datele din Binance și rula backtestul...</div>
 <div id="results"></div>
 
@@ -219,17 +219,14 @@ function analyzeDay(dayIdx, allBtcDaily, allEthDaily, allBtcWeekly, btcFundingMa
   // ══════════════════════════════════════════
 
   // NIVEL 1 — Context (Bias structural)
-  // AJUSTARE 1: "în nor" (score=2) + sub EMA200 = CONTEXT NECLAR, nu bearish confirmat
-  // Bearish confirmat = sub nor (score<=1) SAU (sub EMA200 + sub nor confirmed)
-  // "în nor" singur sau cu EMA200 negativ = incertitudine structurală
-  const ichiScore  = ichi?.bullCount ?? 2;
-  const ichiSubNor  = ichiScore <= 1;           // sub nor = bearish structural
-  const ichiInNor   = ichiScore === 2;           // în nor = incertitudine
-  const ichiDeaupra = ichiScore >= 3;            // deasupra = bullish structural
-  const contextBear = ichiSubNor || (ema200Dist < -5 && ichiScore <= 1);
-  // "în nor" + EMA200 negativ = context NECLAR (nu bearish, nu bullish)
-  const contextNeclar = ichiInNor && !contextBear;
-  const contextBull = ichiDeaupra && ema200Dist > 0;
+  const ichiScore   = ichi?.bullCount ?? 2;
+  const ichiSubNor  = ichiScore <= 1;
+  const ichiInNor   = ichiScore === 2;
+  const ichiDeaupra = ichiScore >= 3;
+  // Bearish: sub nor SAU (în nor + sub EMA200 cu marjă)
+  const contextBear   = ichiSubNor || (ichiInNor && ema200Dist < -5);
+  const contextNeclar = ichiInNor && ema200Dist >= -5 && ema200Dist <= 5;
+  const contextBull   = ichiDeaupra && ema200Dist > 0;
 
   // NIVEL 2 — Confirmation
   // eth_state = WEAKNESS/NEUTRU/STRENGTH
@@ -276,13 +273,14 @@ function analyzeDay(dayIdx, allBtcDaily, allEthDaily, allBtcWeekly, btcFundingMa
   const rsiNeutral = rsiD>42&&rsiD<58;
   const noTrade = emaFlat && rsiNeutral && ethState==='NEUTRU';
 
-  // AJUSTARE 2: Crash Exhaustion Detector
-  // Dacă în ultimele 5 zile BTC a căzut >10% ȘI RSI 1D < 25 ȘI F&G < 20
-  // → semnalul bearish este probabil epuizat → downgrade la SETUP BEAR + warning
+  // Crash Exhaustion Detector — condiții stricte
+  // Epuizare = crash SEVER (>15%) + RSI extrem (<20) + F&G Extreme Fear (<15)
+  // Exclude continuarea crash-ului — doar bounce post-capitulare
   const drop5d = btcD.length >= 6
     ? (btcD[btcD.length-1].close - btcD[btcD.length-6].close) / btcD[btcD.length-6].close * 100
     : 0;
-  const crashExhaustion = drop5d < -10 && rsiD < 25 && fg < 20;
+  // Tighter: >15% drop + RSI<20 + F&G<15 (capitulare reală, nu doar corecție)
+  const crashExhaustion = drop5d < -15 && rsiD < 20 && fg < 15;
 
   // Extension / Valuation
   const overextended = ema200Dist > 20;
@@ -350,7 +348,7 @@ function analyzeDay(dayIdx, allBtcDaily, allEthDaily, allBtcWeekly, btcFundingMa
     noTrade, fg, btcFunding,
     stackBull, stackBear, macdBull,
     crashExhaustion, drop5d: +drop5d.toFixed(1),
-    contextNeclar,
+    contextNeclar, ichiSubNor, ichiInNor, ichiDeaupra,
   };
 }
 
@@ -444,10 +442,10 @@ async function run(){
     const domData=await domResp.json();
     const dom=domData.data.market_cap_percentage.btc;
 
-    // Q1 2026: Jan 1 – Mar 28
-    const q1Start='2026-01-01', q1End='2026-03-28';
+    // 6 luni: Oct 2025 – Mar 2026
+    const q1Start='2025-10-01', q1End='2026-03-28';
     const q1Days=btcDaily.filter(d=>d.ts>=q1Start&&d.ts<=q1End);
-    log(`Analizând ${q1Days.length} zile Q1 2026...`);
+    log(`Analizând ${q1Days.length} zile (Oct 2025 – Mar 2026)...`);
 
     const results=[];
     for(const day of q1Days){
@@ -535,6 +533,22 @@ function renderResults(rows) {
       <div class="stat"><div class="stat-val" style="color:var(--cyan)">${s7.total}</div><div class="stat-lbl">Semnale evaluate T+7</div></div>
     </div>
 
+    <div class="section-title" style="color:#ff3355">🔴 Metrica principală — SEMNAL BEAR ACTIV izolat</div>
+    <div class="summary">
+      <div class="stat"><div class="stat-val" style="color:${baAccT3>=55?'var(--safe)':baAccT3>=40?'var(--warn)':'var(--danger)'}">${baAccT3}%</div><div class="stat-lbl">Acuratețe T+3 Bear Activ</div></div>
+      <div class="stat"><div class="stat-val" style="color:${baAccT7>=55?'var(--safe)':baAccT7>=40?'var(--warn)':'var(--danger)'}">${baAccT7}%</div><div class="stat-lbl">Acuratețe T+7 Bear Activ</div></div>
+      <div class="stat"><div class="stat-val safe">${baCorrectT3}</div><div class="stat-lbl">✅ Corecte T+3</div></div>
+      <div class="stat"><div class="stat-val danger">${baWrongT3}</div><div class="stat-lbl">❌ Greșite T+3</div></div>
+      <div class="stat"><div class="stat-val neutral">${bearActive.length}</div><div class="stat-lbl">Total semnale</div></div>
+    </div>
+
+    <div class="section-title">Distribuție context structural</div>
+    <div class="summary3">
+      <div class="stat"><div class="stat-val safe">${bullRunDays}</div><div class="stat-lbl">📈 Zile Ichimoku deasupra (bull)</div></div>
+      <div class="stat"><div class="stat-val neutral">${unclearDays}</div><div class="stat-lbl">◈ Zile context neclar</div></div>
+      <div class="stat"><div class="stat-val danger">${bearTrendDays}</div><div class="stat-lbl">📉 Zile Ichimoku sub nor (bear)</div></div>
+    </div>
+
     <div class="summary3">
       <div class="stat">
         <div style="display:flex;justify-content:space-around">
@@ -542,7 +556,7 @@ function renderResults(rows) {
           <div><div class="stat-val warn">${s7.partial}</div><div class="stat-lbl">〰 Parțiale</div></div>
           <div><div class="stat-val danger">${s7.wrong}</div><div class="stat-lbl">❌ Greșite</div></div>
         </div>
-        <div class="stat-lbl" style="margin-top:6px">Distribuție T+7</div>
+        <div class="stat-lbl" style="margin-top:6px">Distribuție globală T+7</div>
       </div>
       <div class="stat">
         <div style="display:flex;justify-content:space-around">
@@ -561,17 +575,21 @@ function renderResults(rows) {
 
     ${insights.length?`<div class="section-title">Insights Automate</div>${insights.map(i=>`<div class="insight insight-${i.type}">${i.text}</div>`).join('')}`:''}
 
-    <div class="section-title">Detaliu pe Zile — Q1 2026</div>
+    <div class="section-title">Detaliu pe Zile — Oct 2025 – Mar 2026</div>
     <div class="tabs">
       <div class="tab active" onclick="showTab('all',this)">Toate (${rows.length})</div>
+      <div class="tab" onclick="showTab('signal',this)">🔴 Semnal Bear (${bearActive.length})</div>
+      <div class="tab" onclick="showTab('bull',this)">📈 Bull run (${rows.filter(r=>r.ichiDeaupra).length})</div>
+      <div class="tab" onclick="showTab('unclear',this)">◈ Context neclar (${unclearDays})</div>
       <div class="tab" onclick="showTab('wrong',this)">❌ Greșite T+3 (${rows.filter(r=>r.evalT3.correct===false).length})</div>
       <div class="tab" onclick="showTab('correct',this)">✅ Corecte T+3 (${rows.filter(r=>r.evalT3.correct===true).length})</div>
-      <div class="tab" onclick="showTab('signal',this)">Semnale active (${rows.filter(r=>r.alertState.includes('SEMNAL')).length})</div>
     </div>
     <div id="tab-all" class="tab-content active">${renderTable(rows)}</div>
+    <div id="tab-signal" class="tab-content">${renderTable(bearActive)}</div>
+    <div id="tab-bull" class="tab-content">${renderTable(rows.filter(r=>r.ichiDeaupra))}</div>
+    <div id="tab-unclear" class="tab-content">${renderTable(rows.filter(r=>r.contextNeclar))}</div>
     <div id="tab-wrong" class="tab-content">${renderTable(rows.filter(r=>r.evalT3.correct===false))}</div>
     <div id="tab-correct" class="tab-content">${renderTable(rows.filter(r=>r.evalT3.correct===true))}</div>
-    <div id="tab-signal" class="tab-content">${renderTable(rows.filter(r=>r.alertState.includes('SEMNAL')))}</div>
 
     <div class="section-title">Note metodologice</div>
     <div style="font-size:.62rem;color:var(--neutral);line-height:1.9">
