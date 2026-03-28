@@ -42,7 +42,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 <h1>CryptoRisk v5 — Backtest 6 Luni (Oct 2025 – Mar 2026)</h1>
 <div class="sub">
   Simulare logică dashboard pe date reale Binance · Ianuarie – Martie 2026 (~90 zile)<br>
-  v3 — Context neclar explicit · Crash Exhaustion strict (drop>15% + RSI<20 + F&G<15) · Metrică SEMNAL BEAR ACTIV izolat · 6 luni
+  v4 — Avertisment Top · Crash Exhaustion (sub EMA200 + RSI<20) · Metrica Bear Activ izolat · 6 luni
 </div>
 
 <button class="btn" id="runBtn" onclick="run()">▶ Rulează Backtestul 6 Luni</button>
@@ -318,7 +318,13 @@ function analyzeDay(dayIdx, allBtcDaily, allEthDaily, allBtcWeekly, btcFundingMa
       alertState='◈ CONTEXT NECLAR'; alertColor='neutral';
     }
   } else if(contextBull) {
-    if(confState==='Contradicting_Bull') {
+    // MODIFICARE 1: Avertisment Top la ATH + ETH WEAKNESS + supraextindere
+    const isTopWarning = confState==='Contradicting_Bull'
+      && ethState==='WEAKNESS'
+      && ema200Dist > 10;
+    if(isTopWarning) {
+      alertState='⚠ AVERTISMENT TOP — ETH subperformează la supraextindere'; alertColor='danger';
+    } else if(confState==='Contradicting_Bull') {
       alertState='◈ BIAS BULL (contradicție)'; alertColor='safe';
     } else if(triggerBull) {
       if(fuelBull && confState==='Aligned_Bull') {
@@ -363,14 +369,21 @@ function evalSignal(alertState, chg, horizon) {
   const isBull = chg >= thresh;
   const isNeutral = !isBear && !isBull;
 
-  const alertBear = alertState.includes('BEAR') || alertState.includes('SETUP');
-  const alertBull = alertState.includes('BULL') || alertState.includes('SETUP BULL');
+  const alertBear    = alertState.includes('BEAR') || alertState.includes('SETUP') || alertState.includes('EPUIZARE');
+  const alertTop     = alertState.includes('AVERTISMENT TOP');
+  const alertBull    = alertState.includes('BULL') || alertState.includes('SETUP BULL');
   const alertNeutral = alertState.includes('CONSOLIDARE') || alertState.includes('NECLAR');
   const alertCounter = alertState.includes('COUNTER');
 
   if(alertNeutral) {
     const r = isNeutral?'✅':isBear||isBull?'〰':'✅';
     return {result:r, correct:isNeutral, color:isNeutral?'safe':'warn'};
+  }
+  if(alertTop) {
+    // AVERTISMENT TOP = așteptăm scădere sau cel mult lateral
+    if(isBear) return {result:'✅', correct:true, color:'safe'};
+    if(isNeutral) return {result:'〰', correct:null, color:'warn'};
+    return {result:'❌', correct:false, color:'danger'};
   }
   if(alertCounter) {
     // Counter-trend = expect short bounce up in bear
@@ -494,6 +507,7 @@ function renderResults(rows) {
 
   // ── Metrica principală: SEMNAL BEAR ACTIV izolat ─────────────────
   const bearActive  = rows.filter(r=>r.alertState.includes('SEMNAL BEAR'));
+  const topWarnings = rows.filter(r=>r.alertState.includes('AVERTISMENT TOP'));
   const baT3 = bearActive.filter(r=>r.evalT3.result!=='⏳'&&r.evalT3.result!=='—');
   const baT7 = bearActive.filter(r=>r.evalT7.result!=='⏳'&&r.evalT7.result!=='—');
   const baCorrectT3 = baT3.filter(r=>r.evalT3.correct===true).length;
