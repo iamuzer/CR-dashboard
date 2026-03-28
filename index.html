@@ -492,6 +492,23 @@ function calcStats(rows, evalKey) {
 function renderResults(rows) {
   const s1=calcStats(rows,'evalT1'), s3=calcStats(rows,'evalT3'), s7=calcStats(rows,'evalT7');
 
+  // ── Metrica principală: SEMNAL BEAR ACTIV izolat ─────────────────
+  const bearActive  = rows.filter(r=>r.alertState.includes('SEMNAL BEAR'));
+  const baT3 = bearActive.filter(r=>r.evalT3.result!=='⏳'&&r.evalT3.result!=='—');
+  const baT7 = bearActive.filter(r=>r.evalT7.result!=='⏳'&&r.evalT7.result!=='—');
+  const baCorrectT3 = baT3.filter(r=>r.evalT3.correct===true).length;
+  const baWrongT3   = baT3.filter(r=>r.evalT3.correct===false).length;
+  const baPartialT3 = baT3.filter(r=>r.evalT3.correct===null).length;
+  const baAccT3     = baT3.length>0?Math.round(baCorrectT3/baT3.length*100):0;
+  const baCorrectT7 = baT7.filter(r=>r.evalT7.correct===true).length;
+  const baWrongT7   = baT7.filter(r=>r.evalT7.correct===false).length;
+  const baAccT7     = baT7.length>0?Math.round(baCorrectT7/baT7.length*100):0;
+
+  // ── Context structural distribution ──────────────────────────────
+  const bullRunDays   = rows.filter(r=>r.ichiDeaupra).length;
+  const bearTrendDays = rows.filter(r=>r.ichiSubNor).length;
+  const unclearDays   = rows.filter(r=>r.contextNeclar).length;
+
   // Signal distribution
   const byType={
     'SEMNAL BEAR':rows.filter(r=>r.alertState.includes('SEMNAL BEAR')).length,
