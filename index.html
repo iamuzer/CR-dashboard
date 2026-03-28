@@ -42,7 +42,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 <h1>CryptoRisk v5 — Backtest 6 Luni (Oct 2025 – Mar 2026)</h1>
 <div class="sub">
   Simulare logică dashboard pe date reale Binance · Ianuarie – Martie 2026 (~90 zile)<br>
-  v4 — Avertisment Top · Crash Exhaustion (sub EMA200 + RSI<20) · Metrica Bear Activ izolat · 6 luni
+  v5 — Epuizare evaluat corect (bounce=✅) · Crash Exhaustion RSI<25 · Avertisment Top · 6 luni
 </div>
 
 <button class="btn" id="runBtn" onclick="run()">▶ Rulează Backtestul 6 Luni</button>
@@ -280,7 +280,9 @@ function analyzeDay(dayIdx, allBtcDaily, allEthDaily, allBtcWeekly, btcFundingMa
     ? (btcD[btcD.length-1].close - btcD[btcD.length-6].close) / btcD[btcD.length-6].close * 100
     : 0;
   // Tighter: >15% drop + RSI<20 + F&G<15 (capitulare reală, nu doar corecție)
-  const crashExhaustion = drop5d < -15 && rsiD < 20 && fg < 15;
+  // RSI < 25 (mai lax) — prinde capitulările parțiale (ex: Nov 20-22)
+  const fgExtremeOrMissing2 = fg < 15 || fg === 50;
+  const crashExhaustion = contextBear && ema200Dist < -10 && rsiD < 25 && fgExtremeOrMissing2;
 
   // Extension / Valuation
   const overextended = ema200Dist > 20;
@@ -384,6 +386,13 @@ function evalSignal(alertState, chg, horizon) {
     if(isBear) return {result:'✅', correct:true, color:'safe'};
     if(isNeutral) return {result:'〰', correct:null, color:'warn'};
     return {result:'❌', correct:false, color:'danger'};
+  }
+  if(alertState.includes('EPUIZARE')) {
+    // EPUIZARE POST-CRASH = așteptăm BOUNCE (mișcare bullish)
+    // Corect dacă piața urcă, greșit dacă continuă să cadă
+    if(isBull) return {result:'✅ bounce confirmat', correct:true, color:'safe'};
+    if(isBear) return {result:'❌ crash continuat', correct:false, color:'danger'};
+    return {result:'〰 lateral', correct:null, color:'warn'};
   }
   if(alertCounter) {
     // Counter-trend = expect short bounce up in bear
@@ -507,6 +516,8 @@ function renderResults(rows) {
 
   // ── Metrica principală: SEMNAL BEAR ACTIV izolat ─────────────────
   const bearActive  = rows.filter(r=>r.alertState.includes('SEMNAL BEAR'));
+  const epuizare    = rows.filter(r=>r.alertState.includes('EPUIZARE'));
+  const topWarnings = rows.filter(r=>r.alertState.includes('AVERTISMENT TOP'));
   const topWarnings = rows.filter(r=>r.alertState.includes('AVERTISMENT TOP'));
   const baT3 = bearActive.filter(r=>r.evalT3.result!=='⏳'&&r.evalT3.result!=='—');
   const baT7 = bearActive.filter(r=>r.evalT7.result!=='⏳'&&r.evalT7.result!=='—');
@@ -570,7 +581,29 @@ function renderResults(rows) {
       <div class="stat"><div class="stat-val" style="color:${baAccT7>=55?'var(--safe)':baAccT7>=40?'var(--warn)':'var(--danger)'}">${baAccT7}%</div><div class="stat-lbl">Acuratețe T+7 Bear Activ</div></div>
       <div class="stat"><div class="stat-val safe">${baCorrectT3}</div><div class="stat-lbl">✅ Corecte T+3</div></div>
       <div class="stat"><div class="stat-val danger">${baWrongT3}</div><div class="stat-lbl">❌ Greșite T+3</div></div>
-      <div class="stat"><div class="stat-val neutral">${bearActive.length}</div><div class="stat-lbl">Total semnale</div></div>
+      <div class="stat"><div class="stat-val neutral">${bearActive.length}</div><div class="stat-lbl">Total Bear Activ</div></div>
+      <div class="stat"><div class="stat-val" style="color:#ff8c55">${topWarnings.length}</div><div class="stat-lbl">⚠ Avertisment Top</div></div>
+      <div class="stat"><div class="stat-val" style="color:#ffb300">${epuizare.length}</div><div class="stat-lbl">⚡ Epuizare crash</div></div>
+    </div>
+
+    <div class="section-title" style="color:#ff8c55">⚠ Avertisment Top — acuratețe izolată</div>
+    <div class="summary">
+      ${(()=>{
+        const topEval = topWarnings.filter(r=>r.evalT7.result!=='⏳'&&r.evalT7.result!=='—');
+        const topCorr = topEval.filter(r=>r.evalT7.correct===true).length;
+        const topWrong= topEval.filter(r=>r.evalT7.correct===false).length;
+        const topAcc  = topEval.length>0?Math.round(topCorr/topEval.length*100):0;
+        const epEval  = epuizare.filter(r=>r.evalT3.result!=='⏳'&&r.evalT3.result!=='—');
+        const epCorr  = epEval.filter(r=>r.evalT3.correct===true).length;
+        const epAcc   = epEval.length>0?Math.round(epCorr/epEval.length*100):0;
+        return \`
+          <div class="stat"><div class="stat-val" style="color:\${topAcc>=55?'var(--safe)':topAcc>=40?'var(--warn)':'var(--danger)'}">\${topAcc}%</div><div class="stat-lbl">Acuratețe T+7 Top</div></div>
+          <div class="stat"><div class="stat-val safe">\${topCorr}</div><div class="stat-lbl">✅ Corecte T+7</div></div>
+          <div class="stat"><div class="stat-val danger">\${topWrong}</div><div class="stat-lbl">❌ Greșite T+7</div></div>
+          <div class="stat"><div class="stat-val" style="color:\${epAcc>=55?'var(--safe)':epAcc>=40?'var(--warn)':'var(--danger)'}">\${epAcc}%</div><div class="stat-lbl">Acuratețe T+3 Epuizare</div></div>
+          <div class="stat"><div class="stat-val neutral">\${epuizare.length}</div><div class="stat-lbl">Total epuizare</div></div>
+        \`;
+      })()}
     </div>
 
     <div class="section-title">Distribuție context structural</div>
@@ -610,6 +643,8 @@ function renderResults(rows) {
     <div class="tabs">
       <div class="tab active" onclick="showTab('all',this)">Toate (${rows.length})</div>
       <div class="tab" onclick="showTab('signal',this)">🔴 Semnal Bear (${bearActive.length})</div>
+      <div class="tab" onclick="showTab('top',this)">⚠ Top Warning (${topWarnings.length})</div>
+      <div class="tab" onclick="showTab('epuizare',this)">⚡ Epuizare (${epuizare.length})</div>
       <div class="tab" onclick="showTab('bull',this)">📈 Bull run (${rows.filter(r=>r.ichiDeaupra).length})</div>
       <div class="tab" onclick="showTab('unclear',this)">◈ Context neclar (${unclearDays})</div>
       <div class="tab" onclick="showTab('wrong',this)">❌ Greșite T+3 (${rows.filter(r=>r.evalT3.correct===false).length})</div>
@@ -617,6 +652,8 @@ function renderResults(rows) {
     </div>
     <div id="tab-all" class="tab-content active">${renderTable(rows)}</div>
     <div id="tab-signal" class="tab-content">${renderTable(bearActive)}</div>
+    <div id="tab-top" class="tab-content">${renderTable(topWarnings)}</div>
+    <div id="tab-epuizare" class="tab-content">${renderTable(epuizare)}</div>
     <div id="tab-bull" class="tab-content">${renderTable(rows.filter(r=>r.ichiDeaupra))}</div>
     <div id="tab-unclear" class="tab-content">${renderTable(rows.filter(r=>r.contextNeclar))}</div>
     <div id="tab-wrong" class="tab-content">${renderTable(rows.filter(r=>r.evalT3.correct===false))}</div>
