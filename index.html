@@ -42,7 +42,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 <h1>CryptoRisk v5 — Backtest 6 Luni (Oct 2025 – Mar 2026)</h1>
 <div class="sub">
   Simulare logică dashboard pe date reale Binance · Ianuarie – Martie 2026 (~90 zile)<br>
-  v8 — Re-entry Bounce (rise>2pt + rsiPrev<40 + DD30>15% + ETH≠WEAK) · Epuizare · Top · 6 luni
+  v10 — Recovery Detection (20 indicatori F1/F2/F3) · Trendline Structural (lookback 1D:15) · 6 luni
 </div>
 
 <button class="btn" id="runBtn" onclick="run()">▶ Rulează Backtestul 6 Luni</button>
@@ -164,6 +164,130 @@ function calcEthRelative(btcCloses, ethCloses, dom) {
 // ═══════════════════════════════════════════════════
 // MAIN ANALYSIS — per day
 // ═══════════════════════════════════════════════════
+
+// ── RECOVERY CALC FUNCTIONS (backtest) ──────────────────────
+function calcBB_BT(closes, period=20) {
+  if(closes.length < period) return null;
+  const last=closes.slice(-period);
+  const ma=last.reduce((a,b)=>a+b,0)/period;
+  const std=Math.sqrt(last.reduce((s,v)=>s+(v-ma)**2,0)/period);
+  return { lower:ma-2*std, upper:ma+2*std, ma, pos:closes[closes.length-1]<(ma-2*std)?'BELOW':closes[closes.length-1]>(ma+2*std)?'ABOVE':'INSIDE' };
+}
+
+function calcStochRSI_BT(closes, rp=14, sp=14) {
+  const rsi=calcRSI(closes, rp); // backtest calcRSI returns array directly
+  if(!rsi||rsi.length<sp+1)return null;
+  const a=rsi,n=a.length;
+  const sl=a.slice(n-sp),mn=Math.min(...sl),mx=Math.max(...sl);
+  const k=mx===mn?50:((a[n-1]-mn)/(mx-mn))*100;
+  const sl2=a.slice(n-sp-1,n-1),mn2=Math.min(...sl2),mx2=Math.max(...sl2);
+  const kPrev=mx2===mn2?50:((a[n-2]-mn2)/(mx2-mn2))*100;
+  return {k,kPrev};
+}
+
+function calcRSIDiv_BT(candles, rsiArr) {
+  if(!candles||!rsiArr||rsiArr.length<28)return 'NICIO';
+  const prices=candles.map(c=>c.low);const n=Math.min(prices.length,rsiArr.length);
+  const pp=prices.slice(-28,-14),lp=prices.slice(-14);
+  const pr=rsiArr.slice(-28,-14),lr=rsiArr.slice(-14);
+  if(!pp.length||!lp.length)return 'NICIO';
+  if(Math.min(...lp)<Math.min(...pp)&&Math.min(...lr)>Math.min(...pr))return 'BULLISH';
+  return 'NICIO';
+}
+
+function calcHigherLows_BT(candles, n=2) {
+  if(!candles||candles.length<n+1)return false;
+  const lows=candles.slice(-(n+1)).map(c=>c.low);
+  return lows.every((l,i)=>i===0||l>lows[i-1]);
+}
+
+function calcClosesStr_BT(candles, n=2) {
+  if(!candles||candles.length<n+1)return 'MIXT';
+  const last=candles.slice(-(n+1));
+  const up=last.every((c,i)=>i===0||c.close>last[i-1].close);
+  const dn=last.every((c,i)=>i===0||c.close<last[i-1].close);
+  return up?'UP':dn?'DOWN':'MIXT';
+}
+
+function calcPOC_BT(candles, lookback=30) {
+  if(!candles||candles.length<lookback)return null;
+  const last=candles.slice(-lookback);
+  const mn=Math.min(...last.map(c=>c.low)),mx=Math.max(...last.map(c=>c.high));
+  const range=mx-mn;if(range===0)return null;
+  const buckets=40,bSize=range/buckets,profile=new Array(buckets).fill(0);
+  last.forEach(cd=>{
+    const bi=Math.min(buckets-1,Math.floor(((cd.high+cd.low)/2-mn)/bSize));
+    profile[bi]+=cd.vol;
+  });
+  let maxVol=0,pocB=0;profile.forEach((v,i)=>{if(v>maxVol){maxVol=v;pocB=i;}});
+  const pocPrice=mn+(pocB+0.5)*bSize;
+  const cur=last[last.length-1].close;
+  return{pocPrice,distPct:(cur-pocPrice)/pocPrice*100,abovePOC:cur>pocPrice,nearPOC:Math.abs((cur-pocPrice)/pocPrice*100)<5};
+}
+
+function calcFundCum_BT(btcFundingMap, dateStr, days=5) {
+  // btcFundingMap: {date: totalFundingForDay}
+  const entries=Object.entries(btcFundingMap)
+    .filter(([d])=>d<=dateStr)
+    .sort(([a],[b])=>a<b?-1:1)
+    .slice(-days);
+  if(!entries.length)return{sum:0,signal:'INSUF'};
+  const sum=entries.reduce((a,[,v])=>a+v,0);
+  const negCount=entries.filter(([,v])=>v<0).length;
+  const signal=sum<-0.3&&negCount>=entries.length*0.6?'SHORT_EXPENSIVE':
+               sum>0.3&&negCount<=entries.length*0.2?'LONG_EXPENSIVE':'NEUTRU';
+  return{sum:+sum.toFixed(3),negCount,signal};
+}
+
+function calcRecoveryScore_BT(btcD, btcFundingMap, dateStr, rsiDArr, rsiD, rsiDPrev, fg, btcFunding, ema200Dist, ethState, macdBull, stackBull, ichiTKBull) {
+  let f1=0, f2=0, f3=0;
+
+  // ── FAZA 1 ───────────────────────────────────────────────
+  if(rsiD < 30) f1++;
+  if(fg < 25)   f1++;
+  if(btcFunding < -0.01) f1++;
+
+  // StochRSI
+  const closes=btcD.map(c=>c.close);
+  const stoch=calcStochRSI_BT(closes);
+  if(stoch&&((stoch.kPrev<20&&stoch.k>stoch.kPrev)||stoch.k<20)) f1++;
+
+  // RSI Divergence
+  if(calcRSIDiv_BT(btcD, rsiDArr)==='BULLISH') f1++;
+
+  // Funding cumulativ 5D
+  const fundCum=calcFundCum_BT(btcFundingMap, dateStr);
+  if(fundCum.signal==='SHORT_EXPENSIVE') f1++;
+
+  // Bollinger Bands
+  const bb=calcBB_BT(closes);
+  if(bb&&(bb.pos==='BELOW'||(bb.pos==='INSIDE'&&closes.length>1&&closes[closes.length-2]<bb.lower))) f1++;
+
+  // ── FAZA 2 ───────────────────────────────────────────────
+  if(calcClosesStr_BT(btcD, 2)==='UP') f2++;
+  if(calcClosesStr_BT(btcD, 3)==='UP') f2++;  // proxy 4H
+  if(calcHigherLows_BT(btcD, 2)) f2++;
+  if(calcHigherLows_BT(btcD, 3)) f2++;
+
+  // POC
+  const poc=calcPOC_BT(btcD);
+  if(poc&&poc.abovePOC&&poc.nearPOC) f2++;
+
+  // Long/Short — nu avem în backtest, skip (1D proxy: ETH rel)
+  // OI — nu avem în backtest, skip
+
+  // Funding negativ ca semn acumulare
+  if(btcFunding < -0.01) f2++;
+
+  // ── FAZA 3 ───────────────────────────────────────────────
+  if(macdBull)   f3++;
+  if(stackBull)  f3++;
+  if(ethState==='STRENGTH') f3++;
+  if(ichiTKBull) f3++;
+  if(ema200Dist > -5) f3++; // aproape de EMA200 = confirmare structurală
+
+  return{f1,f2,f3,maxF1:7,maxF2:6,maxF3:5};
+}
 function analyzeDay(dayIdx, allBtcDaily, allEthDaily, allBtcWeekly, btcFundingMap, fngMap, dom) {
   const btcD = allBtcDaily.slice(0, dayIdx+1);
   const ethD = allEthDaily.slice(0, dayIdx+1);
@@ -318,13 +442,43 @@ function analyzeDay(dayIdx, allBtcDaily, allEthDaily, allBtcWeekly, btcFundingMa
   const confidencePenalty = Math.min(0.20, overextended?0.20:0);
 
   // ── ALERT STATE ──
+  // ── RECOVERY SCORE ──────────────────────────────────────
+  // rsiDArr already declared above as calcRSI(btcCloses, 14) — array directly
+  const ichiTKBull = ichi?.tkBull ?? false;
+  let recScore = {f1:0, f2:0, f3:0, maxF1:7, maxF2:6, maxF3:5};
+  try {
+    recScore = calcRecoveryScore_BT(
+      btcD, btcFundingMap, dateStr,
+      rsiDArr, rsiD, rsiDPrev,
+      fg, btcFunding, ema200Dist,
+      ethState, macdBull, stackBull, ichiTKBull
+    );
+  } catch(err) {
+    console.warn('recScore error:', err.message, err.stack);
+  }
+
+  // ── RECOVERY qualifier for RE-ENTRY ──────────────────────
+  const reQual = recScore.f2 >= 4 && recScore.f3 >= 3 ? ' ✅ CU CONVINGERE'
+               : recScore.f2 >= 2 && recScore.f3 >= 1 ? ' ⚠ CU REZERVE'
+               : recScore.f2 < 2                       ? ' ❌ PREMATUR'
+               : '';
+
+  // ── RECOVERY STRUCTURAL check ────────────────────────────
+  const recoveryStructural = contextBear && !reentryBounce
+    && recScore.f1 >= 4 && recScore.f2 >= 4 && recScore.f3 >= 3;
+
   let alertState='', alertColor='neutral';
 
   if(noTrade) {
     alertState='◈ CONSOLIDARE'; alertColor='neutral';
   } else if(reentryBounce) {
-    // RE-ENTRY BOUNCE — tactical signal in bear market
-    alertState='↗ RE-ENTRY BOUNCE — Recovery tehnic posibil'; alertColor='purple';
+    // RE-ENTRY BOUNCE — qualifier bazat pe recScore (calculat mai jos)
+    alertState='↗ RE-ENTRY BOUNCE___QUAL___'; alertColor='purple';
+  } else if(contextBear && !reentryBounce && recScore.f1>=4 && recScore.f2>=4 && recScore.f3>=3) {
+    alertState='🔄 RECOVERY STRUCTURAL — Schimbare de trend posibilă'; alertColor='safe';
+  } else if(contextBear && !reentryBounce &&
+             recScore.f1 >= 3 && recScore.f2 >= 2) {
+    alertState='⚡ RECOVERY TIMPURIU — Semne incipiente'; alertColor='warn';
   } else if(contextBear && triggerBull && !triggerBear) {
     alertState='↗ COUNTER-TREND'; alertColor='purple';
   } else if(contextBear) {
@@ -373,6 +527,14 @@ function analyzeDay(dayIdx, allBtcDaily, allEthDaily, allBtcWeekly, btcFundingMa
     alertState='◈ CONTEXT NECLAR'; alertColor='neutral';
   }
 
+  // Fix RE-ENTRY qualifier — alertState now set, recScore available
+  if(alertState.includes('___QUAL___')) {
+    alertState = alertState.replace('___QUAL___',
+      recScore.f2>=4&&recScore.f3>=3?' ✅ CU CONVINGERE':
+      recScore.f2>=2&&recScore.f3>=1?' ⚠ CU REZERVE':
+      ' ❌ PREMATUR');
+  }
+
   return {
     date: dateStr, dayIdx,
     price, ethPrice, dayChg,
@@ -391,6 +553,7 @@ function analyzeDay(dayIdx, allBtcDaily, allEthDaily, allBtcWeekly, btcFundingMa
     contextNeclar, ichiSubNor, ichiInNor, ichiDeaupra,
     reentryBounce, rsiDPrev: +rsiDPrev.toFixed(1), rsiRising,
     drawdownFromHigh: +drawdownFromHigh.toFixed(1),
+    recScore, reQual, recoveryStructural,
   };
 }
 
@@ -435,6 +598,20 @@ function evalSignal(alertState, chg, horizon) {
     if(isBear) return {result:'❌ fals — continuă bearish', correct:false, color:'danger'};
     return {result:'〰 lateral', correct:null, color:'warn'};
   }
+  if(alertState.includes('RECOVERY STRUCTURAL')) {
+    // Recovery structural = mișcare bullish susținută
+    if(isBull) return {result:'✅ recovery confirmat', correct:true, color:'safe'};
+    if(isBear) return {result:'❌ recovery eșuat', correct:false, color:'danger'};
+    return {result:'〰 lateral', correct:null, color:'warn'};
+  }
+  if(alertState.includes('RECOVERY TIMPURIU')) {
+    // Recovery timpuriu = precauție, nu acțiune
+    // Corect dacă piața NU cade (lateral sau sus = semnal valid de precauție)
+    // Greșit dacă piața cade >thresh (dead cat bounce confirmat = semnal greșit de tip)
+    if(isBear) return {result:'❌ dead cat bounce', correct:false, color:'danger'};
+    if(isBull) return {result:'✅ recovery confirmat', correct:true, color:'safe'};
+    return {result:'〰 lateral — precauție validă', correct:null, color:'warn'};
+  }
   if(alertCounter) {
     // Counter-trend = expect short bounce up in bear
     const r = isBull?'✅':isBear?'❌':'〰';
@@ -472,7 +649,7 @@ async function fetchKlines(symbol, interval, limit) {
   return data.map(k=>({ts:new Date(k[0]).toISOString().slice(0,10),open:+k[1],high:+k[2],low:+k[3],close:+k[4],vol:+k[5]}));
 }
 async function fetchFunding(symbol) {
-  const url=`https://fapi.binance.com/fapi/v1/fundingRate?symbol=${symbol}&limit=500`;
+  const url=`https://fapi.binance.com/fapi/v1/fundingRate?symbol=${symbol}&limit=700`;
   const r=await fetch(url);
   if(!r.ok) return {};
   const data=await r.json();
@@ -496,7 +673,7 @@ async function run(){
     log('Fetching BTC Funding...');
     const btcFundingMap = await fetchFunding('BTCUSDT');
     log('Fetching Fear & Greed (90 zile)...');
-    const fngResp = await fetch('https://api.alternative.me/fng/?limit=90');
+    const fngResp = await fetch('https://api.alternative.me/fng/?limit=180');
     const fngData = await fngResp.json();
     const fngMap={};
     fngData.data.forEach(d=>{const date=new Date(d.timestamp*1000).toISOString().slice(0,10);fngMap[date]=parseInt(d.value);});
@@ -530,8 +707,8 @@ async function run(){
     renderResults(results);
 
   } catch(e) {
-    log('❌ Eroare: '+e.message);
-    console.error(e);
+    log('❌ Eroare: '+e.message+' ('+e.stack?.split('\n')[1]+')');
+    console.error('Full error:', e);
   }
   btn.disabled=false; btn.textContent='▶ Rulează din nou';
 }
@@ -558,6 +735,11 @@ function renderResults(rows) {
   // ── Metrica principală: SEMNAL BEAR ACTIV izolat ─────────────────
   const bearActive   = rows.filter(r=>r.alertState.includes('SEMNAL BEAR'));
   const reentryRows  = rows.filter(r=>r.reentryBounce||r.alertState.includes('RE-ENTRY'));
+  const reConvingere = reentryRows.filter(r=>r.alertState.includes('CU CONVINGERE'));
+  const reRezeve     = reentryRows.filter(r=>r.alertState.includes('CU REZERVE'));
+  const rePrematur   = reentryRows.filter(r=>r.alertState.includes('PREMATUR'));
+  const recoveries   = rows.filter(r=>r.alertState.includes('RECOVERY STRUCTURAL'));
+  const recovTimpuriu= rows.filter(r=>r.alertState.includes('RECOVERY TIMPURIU'));
   const epuizare    = rows.filter(r=>r.alertState.includes('EPUIZARE'));
   const topWarnings = rows.filter(r=>r.alertState.includes('AVERTISMENT TOP'));
   const baT3 = bearActive.filter(r=>r.evalT3.result!=='⏳'&&r.evalT3.result!=='—');
@@ -585,7 +767,9 @@ function renderResults(rows) {
     'EPUIZARE POST-CRASH':rows.filter(r=>r.alertState.includes('EPUIZARE')).length,
     'BIAS BEAR':rows.filter(r=>r.alertState.includes('BIAS BEAR')).length,
     'BIAS BULL':rows.filter(r=>r.alertState.includes('BIAS BULL')).length,
-    'COUNTER-TREND':rows.filter(r=>r.alertState.includes('COUNTER')||r.alertState.includes('RECOVERY')).length,
+    'COUNTER-TREND':rows.filter(r=>r.alertState.includes('COUNTER-TREND')).length,
+    'RECOVERY STRUCTURAL':recoveries.length,
+    'RECOVERY TIMPURIU':recovTimpuriu.length,
     'CONSOLIDARE':rows.filter(r=>r.alertState.includes('CONSOLIDARE')).length,
     'CONTEXT NECLAR':rows.filter(r=>r.alertState.includes('NECLAR')).length,
   };
@@ -625,6 +809,11 @@ function renderResults(rows) {
       <div class="stat"><div class="stat-val danger">${baWrongT3}</div><div class="stat-lbl">❌ Greșite T+3</div></div>
       <div class="stat"><div class="stat-val neutral">${bearActive.length}</div><div class="stat-lbl">Total Bear Activ</div></div>
       <div class="stat"><div class="stat-val" style="color:#a78bfa">${reentryRows.length}</div><div class="stat-lbl">↗ Re-entry Bounce</div></div>
+      <div class="stat"><div class="stat-val" style="color:#00e87a">${recoveries.length}</div><div class="stat-lbl">🔄 Recovery Structural</div></div>
+      <div class="stat"><div class="stat-val" style="color:#ffb300">${recovTimpuriu.length}</div><div class="stat-lbl">⚡ Recovery Timpuriu</div></div>
+      <div class="stat"><div class="stat-val" style="color:#00e87a">${reConvingere.length}</div><div class="stat-lbl">✅ Re-entry Conv.</div></div>
+      <div class="stat"><div class="stat-val" style="color:#ffb300">${reRezeve.length}</div><div class="stat-lbl">⚠ Re-entry Rezerve</div></div>
+      <div class="stat"><div class="stat-val" style="color:#ff3355">${rePrematur.length}</div><div class="stat-lbl">❌ Re-entry Prematur</div></div>
       <div class="stat"><div class="stat-val" style="color:#ff8c55">${topWarnings.length}</div><div class="stat-lbl">⚠ Avertisment Top</div></div>
       <div class="stat"><div class="stat-val" style="color:#ffb300">${epuizare.length}</div><div class="stat-lbl">⚡ Epuizare crash</div></div>
     </div>
@@ -645,6 +834,47 @@ function renderResults(rows) {
       })()}
     </div>
 
+    <div class="section-title" style="color:#00e87a">🔄 Recovery Structural — acuratețe izolată</div>
+    <div class="summary">
+      ${(()=>{
+        if(!recoveries.length) return '<div class="stat"><div class="stat-val neutral">0</div><div class="stat-lbl">Niciun semnal</div></div>';
+        const recT3=calcStats(recoveries,'evalT3'),recT7=calcStats(recoveries,'evalT7');
+        const c3=recT3.accuracy>=65?'var(--safe)':recT3.accuracy>=45?'var(--warn)':'var(--danger)';
+        const c7=recT7.accuracy>=65?'var(--safe)':recT7.accuracy>=45?'var(--warn)':'var(--danger)';
+        return '<div class="stat"><div class="stat-val" style="color:'+c3+'">'+recT3.accuracy+'%</div><div class="stat-lbl">Acuratețe T+3</div></div>'
+          +'<div class="stat"><div class="stat-val" style="color:'+c7+'">'+recT7.accuracy+'%</div><div class="stat-lbl">Acuratețe T+7</div></div>'
+          +'<div class="stat"><div class="stat-val safe">'+recT3.correct+'</div><div class="stat-lbl">✅ Corecte T+3</div></div>'
+          +'<div class="stat"><div class="stat-val danger">'+recT3.wrong+'</div><div class="stat-lbl">❌ Greșite T+3</div></div>'
+          +'<div class="stat"><div class="stat-val neutral">'+recoveries.length+'</div><div class="stat-lbl">Total semnale</div></div>';
+      })()}
+    </div>
+    <div class="section-title" style="color:#ffb300">⚡ Recovery Timpuriu — acuratețe izolată</div>
+    <div class="summary">
+      ${(()=>{
+        if(!recovTimpuriu.length) return '<div class="stat"><div class="stat-val neutral">0</div><div class="stat-lbl">Niciun semnal</div></div>';
+        const rtT3=calcStats(recovTimpuriu,'evalT3'),rtT7=calcStats(recovTimpuriu,'evalT7');
+        const c3=rtT3.accuracy>=65?'var(--safe)':rtT3.accuracy>=45?'var(--warn)':'var(--danger)';
+        const c7=rtT7.accuracy>=65?'var(--safe)':rtT7.accuracy>=45?'var(--warn)':'var(--danger)';
+        const falseBC=recovTimpuriu.filter(r=>r.evalT3.result&&r.evalT3.result.includes('dead cat')).length;
+        return '<div class="stat"><div class="stat-val" style="color:'+c3+'">'+rtT3.accuracy+'%</div><div class="stat-lbl">Acuratețe T+3</div></div>'
+          +'<div class="stat"><div class="stat-val" style="color:'+c7+'">'+rtT7.accuracy+'%</div><div class="stat-lbl">Acuratețe T+7</div></div>'
+          +'<div class="stat"><div class="stat-val danger">'+falseBC+'</div><div class="stat-lbl">❌ Dead cat bounce</div></div>'
+          +'<div class="stat"><div class="stat-val neutral">'+recovTimpuriu.length+'</div><div class="stat-lbl">Total semnale</div></div>';
+      })()}
+    </div>
+    <div class="section-title" style="color:#a78bfa">↗ Re-entry qualifier breakdown</div>
+    <div class="summary">
+      ${(()=>{
+        if(!reentryRows.length) return '<div class="stat"><div class="stat-val neutral">0</div><div class="stat-lbl">Re-entry total</div></div>';
+        const rcT3=calcStats(reConvingere,'evalT3'),rrT3=calcStats(reRezeve,'evalT3'),rpT3=calcStats(rePrematur,'evalT3');
+        const c3=rcT3.accuracy>=65?'var(--safe)':rcT3.accuracy>=45?'var(--warn)':'var(--danger)';
+        const r3=rrT3.accuracy>=65?'var(--safe)':rrT3.accuracy>=45?'var(--warn)':'var(--danger)';
+        const p3=rpT3.accuracy>=65?'var(--safe)':rpT3.accuracy>=45?'var(--warn)':'var(--danger)';
+        return '<div class="stat"><div class="stat-val" style="color:'+c3+'">'+rcT3.accuracy+'%</div><div class="stat-lbl">✅ Conv. T+3 (n='+reConvingere.length+')</div></div>'
+          +'<div class="stat"><div class="stat-val" style="color:'+r3+'">'+rrT3.accuracy+'%</div><div class="stat-lbl">⚠ Rezerve T+3 (n='+reRezeve.length+')</div></div>'
+          +'<div class="stat"><div class="stat-val" style="color:'+p3+'">'+rpT3.accuracy+'%</div><div class="stat-lbl">❌ Prematur T+3 (n='+rePrematur.length+')</div></div>';
+      })()}
+    </div>
     <div class="section-title">Distribuție context structural</div>
     <div class="summary3">
       <div class="stat"><div class="stat-val safe">${bullRunDays}</div><div class="stat-lbl">📈 Zile Ichimoku deasupra (bull)</div></div>
@@ -676,6 +906,25 @@ function renderResults(rows) {
       </div>
     </div>
 
+    <div class="section-title" style="color:#4a6080">▸ Test Regresie v10 — Validare vs v9</div>
+    <div class="summary">
+      ${(()=>{
+        const bearT3 = calcStats(bearActive,'evalT3').accuracy;
+        const topT7  = calcStats(topWarnings,'evalT7').accuracy;
+        const reT3   = calcStats(reentryRows,'evalT3').accuracy;
+        const epT3   = calcStats(epuizare,'evalT3').accuracy;
+        const cB = bearT3>=46&&bearT3<=52?'var(--safe)':'var(--warn)';
+        const cT = topT7>=75&&topT7<=82?'var(--safe)':'var(--warn)';
+        const ok = bearT3>=46&&bearT3<=52&&topT7>=75&&topT7<=82;
+        return '<div class="stat"><div class="stat-val" style="color:'+cB+'">'+bearT3+'%</div><div class="stat-lbl">Bear T+3 (ref: 48%)</div></div>'
+          +'<div class="stat"><div class="stat-val" style="color:'+cT+'">'+topT7+'%</div><div class="stat-lbl">Top T+7 (ref: 78%)</div></div>'
+          +'<div class="stat"><div class="stat-val neutral">'+reT3+'%</div><div class="stat-lbl">Re-entry T+3 (ref: ~40%)</div></div>'
+          +'<div class="stat"><div class="stat-val neutral">'+epT3+'%</div><div class="stat-lbl">Epuizare T+3 (ref: 50%)</div></div>'
+          +(ok?'<div class="stat"><div class="stat-val safe">✅ REGRESIE OK</div><div class="stat-lbl">Stabile față de v9</div></div>'
+              :'<div class="stat"><div class="stat-val danger">⚠ VERIFICĂ</div><div class="stat-lbl">Deviere față de v9</div></div>');
+      })()}
+    </div>
+
     ${insights.length?`<div class="section-title">Insights Automate</div>${insights.map(i=>`<div class="insight insight-${i.type}">${i.text}</div>`).join('')}`:''}
 
     <div class="section-title">Detaliu pe Zile — Oct 2025 – Mar 2026</div>
@@ -684,7 +933,9 @@ function renderResults(rows) {
       <div class="tab" onclick="showTab('signal',this)">🔴 Semnal Bear (${bearActive.length})</div>
       <div class="tab" onclick="showTab('top',this)">⚠ Top Warning (${topWarnings.length})</div>
       <div class="tab" onclick="showTab('epuizare',this)">⚡ Epuizare (${epuizare.length})</div>
-      <div class="tab" onclick="showTab('reentry',this)">↗ Re-entry (${rows.filter(r=>r.reentryBounce).length})</div>
+      <div class="tab" onclick="showTab('reentry',this)">↗ Re-entry (${reentryRows.length})</div>
+      <div class="tab" onclick="showTab('recovery',this)">🔄 Recovery (${recoveries.length})</div>
+      <div class="tab" onclick="showTab('recTimp',this)">⚡ Rec.Timpuriu (${recovTimpuriu.length})</div>
       <div class="tab" onclick="showTab('bull',this)">📈 Bull run (${rows.filter(r=>r.ichiDeaupra).length})</div>
       <div class="tab" onclick="showTab('unclear',this)">◈ Context neclar (${unclearDays})</div>
       <div class="tab" onclick="showTab('wrong',this)">❌ Greșite T+3 (${rows.filter(r=>r.evalT3.correct===false).length})</div>
@@ -695,6 +946,8 @@ function renderResults(rows) {
     <div id="tab-top" class="tab-content">${renderTable(topWarnings)}</div>
     <div id="tab-epuizare" class="tab-content">${renderTable(epuizare)}</div>
     <div id="tab-reentry" class="tab-content">${renderTable(rows.filter(r=>r.reentryBounce))}</div>
+    <div id="tab-recovery" class="tab-content">${renderTable(recoveries)}</div>
+    <div id="tab-recTimp" class="tab-content">${renderTable(recovTimpuriu)}</div>
     <div id="tab-bull" class="tab-content">${renderTable(rows.filter(r=>r.ichiDeaupra))}</div>
     <div id="tab-unclear" class="tab-content">${renderTable(rows.filter(r=>r.contextNeclar))}</div>
     <div id="tab-wrong" class="tab-content">${renderTable(rows.filter(r=>r.evalT3.correct===false))}</div>
@@ -702,6 +955,8 @@ function renderResults(rows) {
 
     <div class="section-title">Note metodologice</div>
     <div style="font-size:.62rem;color:var(--neutral);line-height:1.9">
+      • <strong>F2 (Acumulare)</strong>: backtestul calculează max 6 indicatori F2 (fără Delta Volume și Long/Short care necesită API separat). Dashboard-ul calculează max 8. Pragul Recovery Structural în BT: F2≥4 (≈67%) echivalent cu F2≥5 din dashboard (≈63%).<br>
+      • <strong>F3 Trendline</strong>: detectarea trendlinei este exclusă din backtest (necesită 220 candle zilnice per fiecare zi analizată — indisponibil în simulare). Dashboard-ul folosește lookback=15 + distanță minimă 14 zile între pivots (Opțiunea A) pentru trendline structural.<br>
       • <strong>T+1</strong>: mișcarea zilei următoare față de semnalul zilei curente. Prag: ±2%.<br>
       • <strong>T+3</strong>: mișcarea cumulată în 3 zile. Prag: ±3%. Mai relevant pentru semnale macro.<br>
       • <strong>T+7</strong>: mișcarea cumulată în 7 zile. Prag: ±5%. Cel mai relevant pentru context Ichimoku/EMA200.<br>
@@ -722,7 +977,7 @@ function renderTable(rows) {
       <th>Data</th><th>BTC</th><th>Δ Zi</th>
       <th>RSI 1D</th><th>RSI 1W</th><th>EMA200</th><th>DD30</th>
       <th>Ichimoku</th><th>ETH Rel.</th><th>F&G</th><th>Δ 5D</th>
-      <th>Alert State</th>
+      <th>Alert State</th><th>Recovery (BT: F2/6)</th>
       <th>T+1</th><th>Eval T+1</th>
       <th>T+3</th><th>Eval T+3</th>
       <th>T+7</th><th>Eval T+7</th>
@@ -749,6 +1004,7 @@ function renderTable(rows) {
         <td class="${fgC}">${r.fg}</td>
         <td class="${r.crashExhaustion?'warn':r.drop5d<-5?'danger':r.drop5d>5?'safe':'neutral'}">${r.drop5d}%${r.crashExhaustion?' ⚡':''}</td>
         <td><span class="pill ${pillC(r.alertColor)}">${r.alertState}</span></td>
+        <td style="font-size:.58rem;color:#4a6080;white-space:nowrap">${r.recScore?`F1:${r.recScore.f1} F2:${r.recScore.f2} F3:${r.recScore.f3}`:'-'}</td>
         <td class="${r.chgT1===null?'neutral':r.chgT1>2?'safe':r.chgT1<-2?'danger':'warn'}">${fmtP(r.chgT1)}</td>
         <td class="${r.evalT1.color}">${r.evalT1.result}</td>
         <td class="${r.chgT3===null?'neutral':r.chgT3>3?'safe':r.chgT3<-3?'danger':'warn'}">${fmtP(r.chgT3)}</td>
