@@ -42,7 +42,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 <h1>CryptoRisk v5 — Backtest 6 Luni (Oct 2025 – Mar 2026)</h1>
 <div class="sub">
   Simulare logică dashboard pe date reale Binance · Ianuarie – Martie 2026 (~90 zile)<br>
-  v5 — Epuizare evaluat corect (bounce=✅) · Crash Exhaustion RSI<25 · Avertisment Top · 6 luni
+  v8 — Re-entry Bounce (rise>2pt + rsiPrev<40 + DD30>15% + ETH≠WEAK) · Epuizare · Top · 6 luni
 </div>
 
 <button class="btn" id="runBtn" onclick="run()">▶ Rulează Backtestul 6 Luni</button>
@@ -181,6 +181,7 @@ function analyzeDay(dayIdx, allBtcDaily, allEthDaily, allBtcWeekly, btcFundingMa
   // ── RSI Daily
   const rsiDArr = calcRSI(btcCloses, 14);
   const rsiD    = rsiDArr ? rsiDArr[rsiDArr.length-1] : 50;
+  const rsiDPrev = rsiDArr && rsiDArr.length>1 ? rsiDArr[rsiDArr.length-2] : rsiD;
 
   // ── RSI 1W — FIXED: use only weekly candles up to this date
   const weeklyClosesUpToDate = getWeeklyClosesUpToDate(allBtcWeekly, dateStr);
@@ -284,6 +285,34 @@ function analyzeDay(dayIdx, allBtcDaily, allEthDaily, allBtcWeekly, btcFundingMa
   const fgExtremeOrMissing2 = fg < 15 || fg === 50;
   const crashExhaustion = contextBear && ema200Dist < -10 && rsiD < 25 && fgExtremeOrMissing2;
 
+  // ── RE-ENTRY BOUNCE detector ─────────────────────────────────────
+  // Tactical bounce signal in bear market — partial re-entry 10-20%
+  // Condiții:
+  // 1. contextBear activ
+  // 2. RSI 1D < 45 (supravândut sau în recuperare timpurie)
+  // 3. drawdownFromHigh < -15% (suntem mult sub recent high)
+  //    — mai stabil decât drop5d care se normalizează după bounce
+  // 4. ETH Relative ≠ WEAKNESS (rotația a început)
+  // 5. RSI 1D în creștere față de ziua anterioară (momentum pozitiv)
+  // 6. Nu este deja EPUIZARE (semnale distincte)
+  const rsiRising = rsiD > rsiDPrev;
+  // Drawdown față de high-ul din ultimele 30 de zile
+  const high30d = btcD.length >= 30
+    ? Math.max(...btcD.slice(-30).map(x=>x.close))
+    : Math.max(...btcD.map(x=>x.close));
+  const drawdownFromHigh = (price - high30d) / high30d * 100;
+
+  const rsiRiseStrong = (rsiD - rsiDPrev) > 2; // creștere minimă 2 puncte
+  const rsiComingFromOversold = rsiDPrev < 40;  // venea din oversold recent
+
+  const reentryBounce = contextBear
+    && rsiD < 45
+    && rsiRiseStrong              // RSI crește cu cel puțin 2 puncte
+    && rsiComingFromOversold      // venea din zona oversold (nu deja neutru)
+    && drawdownFromHigh < -15     // sub -15% față de high-ul recent
+    && ethState !== 'WEAKNESS'    // ETH nu mai subperformează
+    && !crashExhaustion;          // semnal distinct de EPUIZARE
+
   // Extension / Valuation
   const overextended = ema200Dist > 20;
   const confidencePenalty = Math.min(0.20, overextended?0.20:0);
@@ -293,6 +322,9 @@ function analyzeDay(dayIdx, allBtcDaily, allEthDaily, allBtcWeekly, btcFundingMa
 
   if(noTrade) {
     alertState='◈ CONSOLIDARE'; alertColor='neutral';
+  } else if(reentryBounce) {
+    // RE-ENTRY BOUNCE — tactical signal in bear market
+    alertState='↗ RE-ENTRY BOUNCE — Recovery tehnic posibil'; alertColor='purple';
   } else if(contextBear && triggerBull && !triggerBear) {
     alertState='↗ COUNTER-TREND'; alertColor='purple';
   } else if(contextBear) {
@@ -357,6 +389,8 @@ function analyzeDay(dayIdx, allBtcDaily, allEthDaily, allBtcWeekly, btcFundingMa
     stackBull, stackBear, macdBull,
     crashExhaustion, drop5d: +drop5d.toFixed(1),
     contextNeclar, ichiSubNor, ichiInNor, ichiDeaupra,
+    reentryBounce, rsiDPrev: +rsiDPrev.toFixed(1), rsiRising,
+    drawdownFromHigh: +drawdownFromHigh.toFixed(1),
   };
 }
 
@@ -373,6 +407,7 @@ function evalSignal(alertState, chg, horizon) {
 
   const alertBear    = alertState.includes('BEAR') || alertState.includes('SETUP') || alertState.includes('EPUIZARE');
   const alertTop     = alertState.includes('AVERTISMENT TOP');
+  const alertReentry = alertState.includes('RE-ENTRY BOUNCE');
   const alertBull    = alertState.includes('BULL') || alertState.includes('SETUP BULL');
   const alertNeutral = alertState.includes('CONSOLIDARE') || alertState.includes('NECLAR');
   const alertCounter = alertState.includes('COUNTER');
@@ -392,6 +427,12 @@ function evalSignal(alertState, chg, horizon) {
     // Corect dacă piața urcă, greșit dacă continuă să cadă
     if(isBull) return {result:'✅ bounce confirmat', correct:true, color:'safe'};
     if(isBear) return {result:'❌ crash continuat', correct:false, color:'danger'};
+    return {result:'〰 lateral', correct:null, color:'warn'};
+  }
+  if(alertState.includes('RE-ENTRY BOUNCE')) {
+    // RE-ENTRY BOUNCE = așteptăm mișcare bullish (recovery tehnic 5-15%)
+    if(isBull) return {result:'✅ recovery confirmat', correct:true, color:'safe'};
+    if(isBear) return {result:'❌ fals — continuă bearish', correct:false, color:'danger'};
     return {result:'〰 lateral', correct:null, color:'warn'};
   }
   if(alertCounter) {
@@ -515,9 +556,9 @@ function renderResults(rows) {
   const s1=calcStats(rows,'evalT1'), s3=calcStats(rows,'evalT3'), s7=calcStats(rows,'evalT7');
 
   // ── Metrica principală: SEMNAL BEAR ACTIV izolat ─────────────────
-  const bearActive  = rows.filter(r=>r.alertState.includes('SEMNAL BEAR'));
+  const bearActive   = rows.filter(r=>r.alertState.includes('SEMNAL BEAR'));
+  const reentryRows  = rows.filter(r=>r.reentryBounce||r.alertState.includes('RE-ENTRY'));
   const epuizare    = rows.filter(r=>r.alertState.includes('EPUIZARE'));
-  const topWarnings = rows.filter(r=>r.alertState.includes('AVERTISMENT TOP'));
   const topWarnings = rows.filter(r=>r.alertState.includes('AVERTISMENT TOP'));
   const baT3 = bearActive.filter(r=>r.evalT3.result!=='⏳'&&r.evalT3.result!=='—');
   const baT7 = bearActive.filter(r=>r.evalT7.result!=='⏳'&&r.evalT7.result!=='—');
@@ -537,6 +578,7 @@ function renderResults(rows) {
   // Signal distribution
   const byType={
     'SEMNAL BEAR':rows.filter(r=>r.alertState.includes('SEMNAL BEAR')).length,
+    'RE-ENTRY BOUNCE':rows.filter(r=>r.alertState.includes('RE-ENTRY')).length,
     'SEMNAL BULL':rows.filter(r=>r.alertState.includes('SEMNAL BULL')).length,
     'SETUP BEAR':rows.filter(r=>r.alertState.includes('SETUP BEAR')).length,
     'SETUP BULL':rows.filter(r=>r.alertState.includes('SETUP BULL')).length,
@@ -582,6 +624,7 @@ function renderResults(rows) {
       <div class="stat"><div class="stat-val safe">${baCorrectT3}</div><div class="stat-lbl">✅ Corecte T+3</div></div>
       <div class="stat"><div class="stat-val danger">${baWrongT3}</div><div class="stat-lbl">❌ Greșite T+3</div></div>
       <div class="stat"><div class="stat-val neutral">${bearActive.length}</div><div class="stat-lbl">Total Bear Activ</div></div>
+      <div class="stat"><div class="stat-val" style="color:#a78bfa">${reentryRows.length}</div><div class="stat-lbl">↗ Re-entry Bounce</div></div>
       <div class="stat"><div class="stat-val" style="color:#ff8c55">${topWarnings.length}</div><div class="stat-lbl">⚠ Avertisment Top</div></div>
       <div class="stat"><div class="stat-val" style="color:#ffb300">${epuizare.length}</div><div class="stat-lbl">⚡ Epuizare crash</div></div>
     </div>
@@ -641,6 +684,7 @@ function renderResults(rows) {
       <div class="tab" onclick="showTab('signal',this)">🔴 Semnal Bear (${bearActive.length})</div>
       <div class="tab" onclick="showTab('top',this)">⚠ Top Warning (${topWarnings.length})</div>
       <div class="tab" onclick="showTab('epuizare',this)">⚡ Epuizare (${epuizare.length})</div>
+      <div class="tab" onclick="showTab('reentry',this)">↗ Re-entry (${rows.filter(r=>r.reentryBounce).length})</div>
       <div class="tab" onclick="showTab('bull',this)">📈 Bull run (${rows.filter(r=>r.ichiDeaupra).length})</div>
       <div class="tab" onclick="showTab('unclear',this)">◈ Context neclar (${unclearDays})</div>
       <div class="tab" onclick="showTab('wrong',this)">❌ Greșite T+3 (${rows.filter(r=>r.evalT3.correct===false).length})</div>
@@ -650,6 +694,7 @@ function renderResults(rows) {
     <div id="tab-signal" class="tab-content">${renderTable(bearActive)}</div>
     <div id="tab-top" class="tab-content">${renderTable(topWarnings)}</div>
     <div id="tab-epuizare" class="tab-content">${renderTable(epuizare)}</div>
+    <div id="tab-reentry" class="tab-content">${renderTable(rows.filter(r=>r.reentryBounce))}</div>
     <div id="tab-bull" class="tab-content">${renderTable(rows.filter(r=>r.ichiDeaupra))}</div>
     <div id="tab-unclear" class="tab-content">${renderTable(rows.filter(r=>r.contextNeclar))}</div>
     <div id="tab-wrong" class="tab-content">${renderTable(rows.filter(r=>r.evalT3.correct===false))}</div>
@@ -675,7 +720,7 @@ function renderTable(rows) {
   return `<table>
     <thead><tr>
       <th>Data</th><th>BTC</th><th>Δ Zi</th>
-      <th>RSI 1D</th><th>RSI 1W</th><th>EMA200</th>
+      <th>RSI 1D</th><th>RSI 1W</th><th>EMA200</th><th>DD30</th>
       <th>Ichimoku</th><th>ETH Rel.</th><th>F&G</th><th>Δ 5D</th>
       <th>Alert State</th>
       <th>T+1</th><th>Eval T+1</th>
@@ -697,6 +742,7 @@ function renderTable(rows) {
         <td>${r.rsiD}</td>
         <td class="${r.rsiW<45?'safe':r.rsiW>60?'danger':'neutral'}">${r.rsiW}</td>
         <td class="${ema200C}">${r.ema200Dist}%${penStr}</td>
+        <td class="${r.drawdownFromHigh<-15?'danger':r.drawdownFromHigh<-10?'warn':'neutral'}" style="font-size:.56rem">${r.drawdownFromHigh}%</td>
         <td class="${ichiC}">${ichiS}</td>
         <td class="${ethC}">${r.ethState}<br><span style="font-size:.54rem;color:var(--neutral)">${r.ethRatioChg}% ratio</span></td>
         <td class="${r.crashExhaustion?'warn':r.drop5d<-5?'danger':r.drop5d>5?'safe':'neutral'}">${r.drop5d}%${r.crashExhaustion?' ⚡':''}</td>
